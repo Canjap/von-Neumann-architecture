@@ -1,8 +1,3 @@
-`ifndef MUX3
-`define MUX3
-
-`timescale 1ns/100ps
-
 module mux3
     #(parameter bitWidth = 32)(
     input  logic [(bitWidth-1):0] Data0, Data1, Data2,
@@ -17,5 +12,3 @@ module mux3
             default: Output = '0;
         endcase
 endmodule
-
-`endif
