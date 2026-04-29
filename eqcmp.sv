@@ -1,9 +1,10 @@
+// Accumulator architecture: branches test ACC == 0, instead of two specified registers
 module eqcmp
     #(parameter bitWidth = 32)(
-    input  logic [(bitWidth-1):0] input1, input2,
-    output logic           output
+    input  logic [(bitWidth-1):0] acc,
+    output logic                  zero
 );
-    
-    assign output = (input1 == input2);
+
+    assign zero = (acc == {bitWidth{1'b0}});
 
 endmodule
