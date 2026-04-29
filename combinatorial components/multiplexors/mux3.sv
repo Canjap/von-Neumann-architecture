@@ -1,0 +1,21 @@
+`ifndef MUX3
+`define MUX3
+
+`timescale 1ns/100ps
+
+module mux3
+    #(parameter bitWidth = 32)(
+    input  logic [(bitWidth-1):0] Data0, Data1, Data2,
+    input  logic [1:0] Selector,
+    output logic [(bitWidth-1):0] Output
+);
+    always_comb
+        case (Selector)
+            2'b00: Output = Data0;
+            2'b01: Output = Data1;
+            2'b10: Output = Data2;
+            default: Output = '0;
+        endcase
+endmodule
+
+`endif
