@@ -1,0 +1,110 @@
+$date
+	Tue May  5 14:16:31 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module pc_tb $end
+$var wire 32 ! pc_out [31:0] $end
+$var reg 1 " branch_taken $end
+$var reg 32 # branch_target [31:0] $end
+$var reg 1 $ clk $end
+$var reg 1 % reset $end
+$var reg 1 & stall $end
+$scope module uut $end
+$var wire 1 " branch_taken $end
+$var wire 32 ' branch_target [31:0] $end
+$var wire 1 $ clk $end
+$var wire 1 % reset $end
+$var wire 1 & stall $end
+$var wire 32 ( pc_plus4 [31:0] $end
+$var wire 32 ) next_pc [31:0] $end
+$var reg 32 * pc_out [31:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+b0 *
+b100 )
+b100 (
+b0 '
+0&
+1%
+0$
+b0 #
+0"
+b0 !
+$end
+#5
+1$
+#10
+0$
+0%
+#15
+b1000 )
+b1000 (
+b100 !
+b100 *
+1$
+#20
+0$
+#25
+b1100 )
+b1100 (
+b1000 !
+b1000 *
+1$
+#30
+0$
+#35
+b10000 )
+b10000 (
+b1100 !
+b1100 *
+1$
+#40
+b100000 )
+0$
+b100000 #
+b100000 '
+1"
+#45
+b100100 (
+b100000 !
+b100000 *
+1$
+#50
+b100100 )
+0$
+0"
+#55
+b101000 )
+b101000 (
+b100100 !
+b100100 *
+1$
+#60
+0$
+#65
+b101100 )
+b101100 (
+b101000 !
+b101000 *
+1$
+#70
+0$
+#75
+b110000 )
+b110000 (
+b101100 !
+b101100 *
+1$
+#80
+0$
