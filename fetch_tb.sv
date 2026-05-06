@@ -1,121 +1,154 @@
 module fetch_tb;
 
-reg clk;
-reg reset;
-reg stall;
-reg branch_taken;
-wire [31:0] branch_target;
-assign branch_target = 32'b0;
+    reg clk;
+    reg reset;
+    reg stall;
+    reg zero_reg; // Sequential register to bridge the timing gap
 
-wire [31:0] pc_out;
-wire [31:0] instr;
-wire [31:0] ir_out;
+    // --- Branch & Control Signals ---
+    wire branch_taken;      
+    wire [31:0] branch_target;
+    wire alu_zero;          
+    wire regwrite, alusrc, memtoreg, memwrite, branch, jump;
+    wire [1:0] aluop;       
+    wire [3:0] alucontrol;  
 
-wire [23:0] immediateD = ir_out[23:0];
-wire [5:0]  opcodeD    = ir_out[31:26];
-wire [31:0] acc_val;
-wire [31:0] alu_out;
-wire [31:0] operand2;
-// reg         acc_we;
+    // --- Data & Instruction Wires ---
+    wire [31:0] pc_out;
+    wire [31:0] instr;
+    wire [31:0] ir_out;
+    wire [31:0] acc_val;
+    wire [31:0] alu_out;
+    wire [31:0] operand2;
+    wire [31:0] read_data; 
+    wire [31:0] imm_ext;
 
-assign operand2 = {8'b0, ir_out[23:0]}; // Zero-extended
+    // --- Combinational Logic ---
+    wire [23:0] immediateD = ir_out[23:0];
+    wire [5:0]  opcodeD    = ir_out[31:26];
 
-// used to test ALU manually
-// reg [3:0] manual_alu_control;
+    // Synchronized Branch Logic: uses zero_reg from previous cycle
+    assign branch_taken = branch & zero_reg;
 
+    // Sign-extend immediate and calculate target
+    assign imm_ext = {{8{immediateD[23]}}, immediateD};
+    assign branch_target = (pc_out + 4) + (imm_ext << 2);
 
-// --- Control Signals --- Decoder
-wire regwrite, alusrc, memtoreg, memwrite, branch, jump;
-wire [2:0] aluop;
-wire [3:0] alucontrol;
+    // Operand2 Multiplexer (ALUSRC logic)
+    assign operand2 = alusrc ? {{8{ir_out[23]}}, ir_out[23:0]} : 32'b0;
 
+    // --- Module Instantiations ---
 
-// --- Main Decoder ---
-maindec md (
-    .reset(reset),
-    .op(opcodeD),
-    .regwrite(regwrite),
-    .alusrc(alusrc),
-    .memtoreg(memtoreg),
-    .memwrite(memwrite),
-    .branch(branch),
-    .jump(jump),
-    .aluop(aluop)
-);
+    maindec md (
+        .reset(reset),
+        .op(opcodeD),
+        .regwrite(regwrite),
+        .alusrc(alusrc),
+        .memtoreg(memtoreg),
+        .memwrite(memwrite),
+        .branch(branch),
+        .jump(jump),
+        .aluop(aluop)
+    );
 
-// --- ALU Decoder ---
-aludec ad (
-    .aluop(aluop),
-    .alucontrol(alucontrol)
-);
+    aludec ad (
+        .aluop(aluop),
+        .alucontrol(alucontrol)
+    );
 
-// --- The Accumulator ---
-acc #(.n(32)) main_acc (
-    .clk(clk),
-    .reset(reset),
-    .en(regwrite),      // We'll set this to 1 for this test
-    .d(alu_out),
-    .q(acc_val)
-);
+    acc #(.n(32)) main_acc (
+        .clk(clk),
+        .reset(reset),
+        .en(regwrite),
+        .d(alu_out),
+        .q(acc_val)
+    );
 
-// --- The ALU ---
-alu #(.bitWidth(32)) dut_alu (
-    .input1(acc_val),  // ACC provides the current running total
-    .input2(operand2), // Instruction provides the value to add/sub
-    .alucontrol(alucontrol),
-    .result(alu_out),
-    .zero(alu_zero)
-);
+    alu #(.bitWidth(32)) dut_alu (
+        .input1(acc_val),
+        .input2(operand2),
+        .alucontrol(alucontrol),
+        .result(alu_out),
+        .zero(alu_zero)
+    );
 
-// clock
+    dmem data_mem (
+        .clk(clk),
+        .we(memwrite),
+        .a(alu_out),
+        .wd(acc_val),
+        .rd(read_data)
+    );
+
+    pc pc_inst (
+        .clk(clk),
+        .reset(reset),
+        .stall(stall),
+        .branch_taken(branch_taken),
+        .branch_target(branch_target),
+        .pc_out(pc_out)
+    );
+
+    instr_mem imem (
+        .addr(pc_out[7:0]),
+        .readdata(instr)
+    );
+
+    instr_reg ir (
+        .clk(clk),
+        .reset(reset),
+        .en(1'b1),
+        .clear(1'b0),
+        .instr_in(instr),
+        .instr_out(ir_out)
+    );
+
+    // --- Clock & Reset Generation ---
+
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+
+    initial begin
+        reset = 1;
+        stall = 0;
+        #12 reset = 0;
+        #200 $finish;
+    end
+
+    // --- Logic for Flag Synchronization ---
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) 
+            zero_reg <= 0;
+        else
+            zero_reg <= alu_zero; 
+    end
+
+// --- Enhanced Debug Logging ---
 initial begin
-    clk = 0;
-    forever #5 clk = ~clk;
+    $display("\nTime | PC_OUT   | IR_OUT   | ACC_VAL  | ALU_OUT  | REGW | BR | ZERO_R | TAKEN | TARGET");
+    $display("------------------------------------------------------------------------------------------");
+    forever @(negedge clk) begin // Logging on negedge captures values after the clock transition
+        $display("%4t | %h | %h | %h | %h |  %b   | %b  |   %b    |   %b   | %h", 
+            $time, 
+            pc_out, 
+            ir_out, 
+            acc_val, 
+            alu_out, 
+            regwrite, 
+            branch, 
+            zero_reg, 
+            branch_taken, 
+            branch_target
+        );
+    end
 end
 
-// reset sequence
-initial begin
-    reset = 1;
-    #12 reset = 0;
-    #100 $finish;
-end
-
-initial begin
-    stall = 0;
-    branch_taken = 0;
-end
-
-// PC
-pc pc_inst (
-    .clk(clk),
-    .reset(reset),
-    .stall(stall),
-    .branch_taken(branch_taken),
-    .branch_target(branch_target),
-    .pc_out(pc_out)
-);
-
-
-// Instruction memory
-instr_mem imem (
-    .addr(pc_out[7:0]),
-    .readdata(instr)
-);
-
-// Instruction register
-instr_reg ir (
-    .clk(clk),
-    .reset(reset),
-    .en(1'b1),      // 1 means "never stall" for now
-    .clear(1'b0),   // 0 means "never flush" for now
-    .instr_in(instr),
-    .instr_out(ir_out)
-);
-
-// waveform dump
-initial begin
-    $dumpfile("fetch.vcd");
-    $dumpvars(0, fetch_tb);
-end
+    initial begin
+        $dumpfile("fetch.vcd");
+        $dumpvars(0, fetch_tb);
+    end
 
 endmodule

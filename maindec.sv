@@ -1,24 +1,26 @@
 module maindec(
-    input  logic       reset,   // Added reset to kill signals during boot
+    input  logic       reset,
     input  logic [5:0] op,
     output logic       memtoreg, memwrite,
     output logic       branch, alusrc,
     output logic       regwrite, jump,
-    output logic [2:0] aluop
+    output logic [1:0] aluop 
 );
+    logic [7:0] controls;
+    assign {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = controls;
 
     always_comb begin
-        if (reset) begin
-            // Force everything to 0 during reset
-            {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b0;
-        end else begin
+        if (reset) controls = 8'b00000000;
+        else begin
             case(op)
-                6'h02: {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b1_1_1_0_0_0_000; // LDA
-                6'h06: {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b1_1_0_0_0_0_000; // ADD
-                6'h08: {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b1_1_0_0_0_0_001; // SUB
-                6'h10: {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b1_1_0_0_0_0_110; // MULT
-                6'h12: {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b1_1_0_0_0_0_111; // DIV
-                default: {regwrite, alusrc, memtoreg, memwrite, branch, jump, aluop} = 9'b0_0_0_0_0_0_000; // NOP/Illegal
+                // alusrc=0 ensures check Acc, not Acc vs Offset
+                6'h04:   controls = 8'b0_0_0_0_1_0_00; // BZ
+                6'h08:   controls = 8'b1_1_1_0_0_0_00; // LDA
+                6'h02:   controls = 8'b1_1_0_0_0_0_00; // ADD
+                6'h10:   controls = 8'b1_1_0_0_0_0_10; // MULT
+                6'h12:   controls = 8'b1_1_0_0_0_0_11; // DIV
+                6'h2B:   controls = 8'b0_1_0_1_0_0_00; // STA
+                default: controls = 8'b0_0_0_0_0_0_00; // NOP
             endcase
         end
     end
