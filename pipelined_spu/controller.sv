@@ -10,7 +10,7 @@ module controller (
     input  logic [5:0] opD,
     output logic       memtoregD,
     output logic       memwriteD,
-    output logic       alusrcD,
+    output logic [1:0] alusrcD,
     output logic       regwriteD,
     output logic       branchD,
     output logic       jumpD,

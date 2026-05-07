@@ -32,7 +32,7 @@ module datapath (
     // --- Control signals (decode stage, from controller) ---
     input  logic        memtoregD,
     input  logic        memwriteD,
-    input  logic        alusrcD,
+    input  logic [1:0]  alusrcD,
     input  logic        regwriteD,
     input  logic        branchD,
     input  logic        jumpD,
@@ -95,7 +95,7 @@ module datapath (
     // EX STAGE
     // =========================================================
     // TODO: forwarding mux on ACC input (forwardE selects accE / resultW / aluoutM)
-    // TODO: srcb mux (alusrcE selects signimmE or 0)
+    // TODO: srcb mux — 3-way on alusrcE: 00=0  01=signimmE  10=readdataM (forwarded for M-type)
     // TODO: instantiate alu
 
     // =========================================================

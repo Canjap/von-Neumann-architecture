@@ -45,15 +45,19 @@ Every instruction encodes to a single 32-bit word:
 
 | Mnemonic | Opcode | Operand | Operation |
 |---|---|---|---|
-| `NOP` | `0x00` | — | No operation |
-| `ADD` | `0x02` | imm | `ACC ← ACC + imm` |
-| `BZ` | `0x04` | label / offset | If `ACC == 0`: jump to target |
-| `BNZ` | `0x05` | label / offset | If `ACC ≠ 0`: jump to target |
-| `JMP` | `0x06` | label / offset | Unconditional jump to target |
-| `LDA` | `0x08` | imm | `ACC ← Mem[imm]` |
-| `MULT` | `0x10` | imm | `ACC ← ACC × imm` |
-| `DIV` | `0x12` | imm | `ACC ← ACC ÷ imm` |
-| `STA` | `0x2B` | imm | `Mem[imm] ← ACC` |
+| `NOP`   | `0x00` | —           | No operation |
+| `ADD`   | `0x02` | imm         | `ACC ← ACC + imm` |
+| `ADDM`  | `0x03` | addr        | `ACC ← ACC + Mem[addr]` |
+| `BZ`    | `0x04` | label / offset | If `ACC == 0`: jump to target |
+| `BNZ`   | `0x05` | label / offset | If `ACC ≠ 0`: jump to target |
+| `JMP`   | `0x06` | label / offset | Unconditional jump to target |
+| `SUBM`  | `0x07` | addr        | `ACC ← ACC − Mem[addr]` |
+| `LDA`   | `0x08` | addr        | `ACC ← Mem[addr]` |
+| `MULT`  | `0x10` | imm         | `ACC ← ACC × imm` |
+| `MULTM` | `0x11` | addr        | `ACC ← ACC × Mem[addr]` |
+| `DIV`   | `0x12` | imm         | `ACC ← ACC ÷ imm` |
+| `DIVM`  | `0x13` | addr        | `ACC ← ACC ÷ Mem[addr]` |
+| `STA`   | `0x2B` | addr        | `Mem[addr] ← ACC` |
 
 ---
 

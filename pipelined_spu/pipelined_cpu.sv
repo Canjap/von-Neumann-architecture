@@ -24,7 +24,8 @@ module pipelined_cpu (
 
     // Control signals (decode stage)
     logic        memtoregD, memwriteD;
-    logic        alusrcD, regwriteD;
+    logic [1:0]  alusrcD;
+    logic        regwriteD;
     logic        branchD, jumpD;
     logic        memaddrsrcD;
     logic [2:0]  alucontrolD;

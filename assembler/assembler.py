@@ -2,15 +2,19 @@ import sys
 import re
 
 opcodes = {
-    'nop':  0x00,
-    'add':  0x02,
-    'bz':   0x04,
-    'bnz':  0x05,
-    'jmp':  0x06,
-    'lda':  0x08,
-    'mult': 0x10,
-    'div':  0x12,
-    'sta':  0x2B,
+    'nop':   0x00,
+    'add':   0x02,
+    'addm':  0x03,
+    'bz':    0x04,
+    'bnz':   0x05,
+    'jmp':   0x06,
+    'subm':  0x07,
+    'lda':   0x08,
+    'mult':  0x10,
+    'multm': 0x11,
+    'div':   0x12,
+    'divm':  0x13,
+    'sta':   0x2B,
 }
 
 branch_ops = {'bz', 'bnz', 'jmp'}

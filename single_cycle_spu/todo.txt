@@ -8,9 +8,11 @@ spu_controller.sv
       0x02 STA → should be 0x2B
       0x03 ADD → should be 0x02
       0x04 SUB → SUB has no ISA opcode; remove or replace with BZ (0x04)
-[ ] Add missing instructions: BZ (0x04), BNZ (0x05), JMP (0x06), MULT (0x10), DIV (0x12)
+[ ] Add missing instructions: BZ (0x04), BNZ (0x05), JMP (0x06), MULT (0x10), DIV (0x12),
+      ADDM (0x03), SUBM (0x07), MULTM (0x11), DIVM (0x13)
 [ ] Replace hardcoded alucontrol[3:0] with shared maindec + aludec
     (same pattern as pipelined_spu/controller.sv)
+[ ] Expand alusrc to 2 bits: 00=zero  01=sign_ext(imm24)  10=readdata (M-type)
 [ ] Add memtoreg output signal
 [ ] Add memaddrsrc output signal (asserted for LDA and STA)
 [ ] Add branch and jump output signals
@@ -19,8 +21,8 @@ spu_datapath.sv
 ---------------
 [ ] Wire sign extension: extract imm24 = instr[23:0], instantiate signext from
     shared_components/combinatorial components/signext.sv
-[ ] Connect alusrc mux — ALU input B should be sign_ext(imm24) when alusrc=1,
-    not always readdata
+[ ] Replace alusrc mux with 3-way mux: alusrc=00→zero, 01→sign_ext(imm24), 10→readdata
+    (M-type instructions feed memory read data directly into ALU input B)
 [ ] Add memtoreg mux on ACC write data — select between aluout and readdata
 [ ] Implement branch logic:
       - Instantiate eqcmp (shared_components/alu/eqcmp.sv) to check ACC == 0

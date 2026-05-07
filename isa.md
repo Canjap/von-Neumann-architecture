@@ -35,15 +35,19 @@ All instructions are 32 bits wide.
 
 | Opcode (hex) | Mnemonic | Operation |
 |---|---|---|
-| `0x00` | NOP | No operation |
-| `0x02` | ADD | `ACC ← ACC + sign_ext(imm24)` |
-| `0x04` | BZ | If `ACC == 0`: `PC ← branch_target` |
-| `0x05` | BNZ | If `ACC ≠ 0`: `PC ← branch_target` |
-| `0x06` | JMP | `PC ← branch_target` (unconditional) |
-| `0x08` | LDA | `ACC ← Mem[sign_ext(imm24)]` |
-| `0x10` | MULT | `ACC ← ACC × sign_ext(imm24)` |
-| `0x12` | DIV | `ACC ← ACC ÷ sign_ext(imm24)` |
-| `0x2B` | STA | `Mem[sign_ext(imm24)] ← ACC` |
+| `0x00` | NOP   | No operation |
+| `0x02` | ADD   | `ACC ← ACC + sign_ext(imm24)` |
+| `0x03` | ADDM  | `ACC ← ACC + Mem[sign_ext(imm24)]` |
+| `0x04` | BZ    | If `ACC == 0`: `PC ← branch_target` |
+| `0x05` | BNZ   | If `ACC ≠ 0`: `PC ← branch_target` |
+| `0x06` | JMP   | `PC ← branch_target` (unconditional) |
+| `0x07` | SUBM  | `ACC ← ACC − Mem[sign_ext(imm24)]` |
+| `0x08` | LDA   | `ACC ← Mem[sign_ext(imm24)]` |
+| `0x10` | MULT  | `ACC ← ACC × sign_ext(imm24)` |
+| `0x11` | MULTM | `ACC ← ACC × Mem[sign_ext(imm24)]` |
+| `0x12` | DIV   | `ACC ← ACC ÷ sign_ext(imm24)` |
+| `0x13` | DIVM  | `ACC ← ACC ÷ Mem[sign_ext(imm24)]` |
+| `0x2B` | STA   | `Mem[sign_ext(imm24)] ← ACC` |
 
 ---
 
@@ -98,9 +102,10 @@ branch_target = 0x14 + 8 + (-6 × 4) = 0x1C - 24 = 0x04
 
 | Instruction | `aluop[2:0]` | Reason |
 |---|---|---|
-| NOP, ADD, LDA, STA, BZ, BNZ | `000` | All use ADD for address/immediate arithmetic |
-| MULT | `110` | Selects MULT |
-| DIV | `111` | Selects DIV |
+| NOP, ADD, ADDM, LDA, STA, BZ, BNZ | `000` | ADD |
+| SUBM | `001` | SUB |
+| MULT, MULTM | `110` | MULT |
+| DIV, DIVM | `111` | DIV |
 
 > SUB, AND, OR, SLT, NOR are available in the ALU but have no assigned opcodes yet.
 
@@ -110,24 +115,28 @@ branch_target = 0x14 + 8 + (-6 × 4) = 0x1C - 24 = 0x04
 
 Derived from `maindec.sv`.
 
-| Instruction | `regwrite` | `alusrc` | `memtoreg` | `memwrite` | `branch` | `jump` | `memaddrsrc` | `aluop[2:0]` |
+| Instruction | `regwrite` | `alusrc[1:0]` | `memtoreg` | `memwrite` | `branch` | `jump` | `memaddrsrc` | `aluop[2:0]` |
 |---|---|---|---|---|---|---|---|---|
-| NOP | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `000` |
-| ADD | 1 | 1 | 0 | 0 | 0 | 0 | 0 | `000` |
-| BZ | 0 | 0 | 0 | 0 | 1 | 0 | 0 | `000` |
-| BNZ | 0 | 0 | 0 | 0 | 1 | 0 | 0 | `000` |
-| JMP | 0 | 0 | 0 | 0 | 0 | 1 | 0 | `000` |
-| LDA | 1 | 1 | 1 | 0 | 0 | 0 | 1 | `000` |
-| MULT | 1 | 1 | 0 | 0 | 0 | 0 | 0 | `110` |
-| DIV | 1 | 1 | 0 | 0 | 0 | 0 | 0 | `111` |
-| STA | 0 | 1 | 0 | 1 | 0 | 0 | 1 | `000` |
+| NOP   | 0 | `00` | 0 | 0 | 0 | 0 | 0 | `000` |
+| ADD   | 1 | `01` | 0 | 0 | 0 | 0 | 0 | `000` |
+| ADDM  | 1 | `10` | 0 | 0 | 0 | 0 | 1 | `000` |
+| BZ    | 0 | `00` | 0 | 0 | 1 | 0 | 0 | `000` |
+| BNZ   | 0 | `00` | 0 | 0 | 1 | 0 | 0 | `000` |
+| JMP   | 0 | `00` | 0 | 0 | 0 | 1 | 0 | `000` |
+| SUBM  | 1 | `10` | 0 | 0 | 0 | 0 | 1 | `001` |
+| LDA   | 1 | `01` | 1 | 0 | 0 | 0 | 1 | `000` |
+| MULT  | 1 | `01` | 0 | 0 | 0 | 0 | 0 | `110` |
+| MULTM | 1 | `10` | 0 | 0 | 0 | 0 | 1 | `110` |
+| DIV   | 1 | `01` | 0 | 0 | 0 | 0 | 0 | `111` |
+| DIVM  | 1 | `10` | 0 | 0 | 0 | 0 | 1 | `111` |
+| STA   | 0 | `01` | 0 | 1 | 0 | 0 | 1 | `000` |
 
 **Signal definitions:**
 
 | Signal | Effect when asserted |
 |---|---|
 | `regwrite` | Write ALU or memory result to ACC |
-| `alusrc` | Drive `sign_ext(imm24)` as ALU input B (0 = drive 0) |
+| `alusrc[1:0]` | ALU input B source: `00`=zero, `01`=sign\_ext(imm24), `10`=readdata (M-type instructions) |
 | `memtoreg` | Route data-memory read to ACC input (vs. ALU result) |
 | `memwrite` | Write ACC to data memory |
 | `branch` | Enable conditional branch logic |
