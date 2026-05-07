@@ -1,0 +1,76 @@
+Master TODO — von Neumann Accumulator SPU
+==========================================
+See single_cycle_spu/todo.txt for detailed single-cycle fix list.
+
+
+SHARED COMPONENTS
+-----------------
+[ ] imem.sv — hardcoded "test_prog.hex" filename; replace with $value$plusargs so
+      testbenches can load any program:
+        string progfile;
+        initial if (!$value$plusargs("PROG=%s", progfile)) progfile = "test_prog.hex";
+        $readmemh(progfile, RAM);
+[ ] .gitignore — add *.vcd, *.vvp, pc_test (simulation artifacts leaking into repo)
+
+
+SINGLE-CYCLE SPU  (see single_cycle_spu/todo.txt for details)
+--------------
+[ ] spu_controller.sv — fix all opcodes; replace hardcoded alucontrol with shared
+      maindec + aludec; add memtoreg, memaddrsrc, branch, jump outputs;
+      expand alusrc to 2 bits
+[ ] spu_datapath.sv — wire signext; replace alusrc mux with 3-way mux; add memtoreg
+      mux; implement branch/jump logic; add memaddrsrc mux; remove LDA pass-through
+[ ] Replace local component copies (acc.sv, adder.sv, alu.sv, mux2.sv, PC.sv) with
+      `include paths pointing to shared_components/ to avoid divergence
+[ ] Add Makefile and testbench (no tb exists yet)
+[ ] Run countdown.asm and fibonacci.asm on simulator once above is done
+
+
+PIPELINED SPU
+-------------
+datapath.sv (all pipeline stages are TODO stubs):
+[ ] IF stage — PC next-select mux (sequential / branch / jump); PC register (stall-aware);
+      pcplus4F = pcF + 4
+[ ] IF/ID register — latch instrD, pcplus4D; flush on flushD or branch taken; stall on stallD
+[ ] ID stage — instantiate eqcmp to check ACC==0; compute branch target
+      = pcplus4D + (sign_ext(imm24) << 2); sign-extend imm24
+[ ] ID/EX register — latch all control signals, accD, signimmD, pcplus4D, opD; flush on flushE
+[ ] EX stage — forwarding mux on ACC (forwardE: 00=accE  01=resultW  10=aluoutM);
+      3-way srcb mux (alusrcE: 00=zero  01=signimmE  10=readdataM forwarded for M-type);
+      instantiate alu
+[ ] EX/MEM register — latch regwrite, memtoreg, memwrite, aluout, writedata,
+      memaddrsrc, signimm
+[ ] MEM stage — memaddrsrc mux: 1→sign_ext(imm24) direct address, 0→aluoutM
+[ ] MEM/WB register — latch regwrite, memtoreg, readdata, aluout
+[ ] WB stage — resultW mux (memtoreg: 0→aluoutW, 1→readdataW); feed resultW back
+      to ACC write port (ID stage) and forwarding mux (EX stage)
+
+hazard.sv:
+[ ] ACC forwarding logic — forwardE: prioritise MEM (regwriteM→10) over WB (regwriteW→01)
+[ ] Load-use stall — lwstall = memtoregE; stalls any instruction following LDA
+[ ] M-type stall — ADDM/SUBM/MULTM/DIVM need readdata before EX; stall 1 cycle
+      (detect by memaddrsrcE && !memtoregE, i.e. M-type but not LDA)
+[ ] Branch stall — branchstall = branchD && (regwriteE || memtoregM)
+[ ] Drive stallF, stallD, flushE from above; flushD only if branch flushes decode
+
+pipelined_spu_top.sv / tb:
+[ ] Confirm imem addr slice pcF[7:0] is wide enough for your largest program
+[ ] tb_pipelined_spu.sv — add result-checking: watch for STA to a sentinel address
+      (e.g. Mem[255]) and $display / $finish when seen
+[ ] Wire up dmem address through the memaddrsrc mux (currently passes aluoutM directly;
+      should pass mem_addrM output of that mux instead)
+
+
+ASSEMBLER
+---------
+[ ] assembler/fibonacci.hex — assemble and commit once pipelined CPU is tested
+[ ] Consider adding a NOP-padding mode for programs targeting CPUs without full
+      hazard detection (single-cycle has no hazards; pipelined needs stall logic done first)
+
+
+VERIFICATION ORDER (suggested)
+-------------------------------
+1. Single-cycle: assemble countdown.asm → simulate → check ACC hits 0
+2. Single-cycle: assemble fibonacci.asm → simulate → check ACC = 34
+3. Pipelined (no hazards): same programs with manual NOPs inserted
+4. Pipelined (with hazard unit): remove manual NOPs, re-run
