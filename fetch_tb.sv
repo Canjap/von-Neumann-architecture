@@ -27,8 +27,11 @@ module fetch_tb;
     wire [23:0] immediateD = ir_out[23:0];
     wire [5:0]  opcodeD    = ir_out[31:26];
 
-    // Synchronized Branch Logic: uses zero_reg from previous cycle
-    assign branch_taken = branch & zero_reg;
+    // BZ and BNZ logic
+    wire is_bz = (opcodeD == 6'h04);
+    wire is_bnz = (opcodeD == 6'h05);
+
+    assign branch_taken = (is_bz && zero_reg) || (is_bnz && !zero_reg);
 
     // Sign-extend immediate and calculate target
     assign imm_ext = {{8{immediateD[23]}}, immediateD};
@@ -114,7 +117,7 @@ module fetch_tb;
         reset = 1;
         stall = 0;
         #12 reset = 0;
-        #200 $finish;
+        #300 $finish;
     end
 
     // --- Logic for Flag Synchronization ---

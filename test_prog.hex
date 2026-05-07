@@ -1,5 +1,9 @@
 20000005 // 0x00: LDA 5
-08fffffb // 0x04: ADD -5
+08ffffff // 0x04: ADD -1
 00000000 // 0x08: NOP
 00000000 // 0x0c: NOP
-10fffffa // 0x10: BZ -6 (Jumps to 0x00)
+00000000 // 0x10: NOP
+14fffffa // 0x14: BNZ -6
+00000000 // 0x18: NOP  <-- The "Victory Lap" starts here
+00000000 // 0x1c: NOP
+00000000 // 0x20: NOP

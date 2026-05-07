@@ -14,6 +14,7 @@ module maindec(
         else begin
             case(op)
                 // alusrc=0 ensures check Acc, not Acc vs Offset
+                6'h05:   controls = 8'b0_0_0_0_1_0_00; // BNZ (Same control as BZ)
                 6'h04:   controls = 8'b0_0_0_0_1_0_00; // BZ
                 6'h08:   controls = 8'b1_1_1_0_0_0_00; // LDA
                 6'h02:   controls = 8'b1_1_0_0_0_0_00; // ADD
