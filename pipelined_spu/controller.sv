@@ -14,21 +14,23 @@ module controller (
     output logic       regwriteD,
     output logic       branchD,
     output logic       jumpD,
+    output logic       memaddrsrcD,
     output logic [2:0] alucontrolD
 );
 
     logic [2:0] aluopD;
 
     maindec md (
-        .reset    (1'b0),
-        .op       (opD),
-        .regwrite (regwriteD),
-        .alusrc   (alusrcD),
-        .memtoreg (memtoregD),
-        .memwrite (memwriteD),
-        .branch   (branchD),
-        .jump     (jumpD),
-        .aluop    (aluopD)
+        .reset      (1'b0),
+        .op         (opD),
+        .regwrite   (regwriteD),
+        .alusrc     (alusrcD),
+        .memtoreg   (memtoregD),
+        .memwrite   (memwriteD),
+        .branch     (branchD),
+        .jump       (jumpD),
+        .memaddrsrc (memaddrsrcD),
+        .aluop      (aluopD)
     );
 
     aludec ad (

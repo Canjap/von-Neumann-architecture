@@ -36,6 +36,7 @@ module datapath (
     input  logic        regwriteD,
     input  logic        branchD,
     input  logic        jumpD,
+    input  logic        memaddrsrcD,  // 1 = use sign_ext(imm24) directly as mem address (LDA/STA)
     input  logic [2:0]  alucontrolD,
 
     // --- To controller: opcode of instruction in decode stage ---
@@ -101,14 +102,17 @@ module datapath (
     // EX/MEM PIPELINE REGISTER
     // =========================================================
     // Signals to latch: regwriteM_dp, memtoregM_dp, memwriteM,
-    //                   aluoutM, writedataM, pcplus4M
+    //                   aluoutM, writedataM, memaddrsrcM, signimmM
     // TODO
 
     // =========================================================
     // MEM STAGE
     // =========================================================
-    // Data memory read/write driven by aluoutM (address) and writedataM (STA data)
-    // No logic here beyond passing signals — dmem is instantiated in pipelined_spu_top
+    // Memory address mux (memaddrsrc):
+    //   memaddrsrcM=1 (LDA/STA): address = sign_ext(imm24) — direct addressing
+    //   memaddrsrcM=0 (others):  address = aluoutM          — ALU result
+    // mux2 #(32) memaddrmux(aluoutM, signimmM, memaddrsrcM, mem_addrM);
+    // dmem address input should be mem_addrM, not aluoutM directly.
 
     // =========================================================
     // MEM/WB PIPELINE REGISTER

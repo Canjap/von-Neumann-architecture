@@ -40,13 +40,10 @@ All instructions are 32 bits wide.
 | `0x04` | BZ | If `ACC == 0`: `PC ← branch_target` |
 | `0x05` | BNZ | If `ACC ≠ 0`: `PC ← branch_target` |
 | `0x06` | JMP | `PC ← branch_target` (unconditional) |
-| `0x08` | LDA | `ACC ← Mem[ACC + sign_ext(imm24)]` |
+| `0x08` | LDA | `ACC ← Mem[sign_ext(imm24)]` |
 | `0x10` | MULT | `ACC ← ACC × sign_ext(imm24)` |
 | `0x12` | DIV | `ACC ← ACC ÷ sign_ext(imm24)` |
-| `0x2B` | STA | `Mem[ACC + sign_ext(imm24)] ← ACC` |
-
-> **Addressing note:** LDA and STA use base+offset addressing where ACC is the base register.
-> At reset (ACC = 0), `LDA addr` and `STA addr` reduce to direct addressing.
+| `0x2B` | STA | `Mem[sign_ext(imm24)] ← ACC` |
 
 ---
 
@@ -113,17 +110,17 @@ branch_target = 0x14 + 8 + (-6 × 4) = 0x1C - 24 = 0x04
 
 Derived from `maindec.sv`.
 
-| Instruction | `regwrite` | `alusrc` | `memtoreg` | `memwrite` | `branch` | `jump` | `aluop[2:0]` |
-|---|---|---|---|---|---|---|---|
-| NOP | 0 | 0 | 0 | 0 | 0 | 0 | `000` |
-| ADD | 1 | 1 | 0 | 0 | 0 | 0 | `000` |
-| BZ | 0 | 0 | 0 | 0 | 1 | 0 | `000` |
-| BNZ | 0 | 0 | 0 | 0 | 1 | 0 | `000` |
-| JMP | 0 | 0 | 0 | 0 | 0 | 1 | `000` |
-| LDA | 1 | 1 | 1 | 0 | 0 | 0 | `000` |
-| MULT | 1 | 1 | 0 | 0 | 0 | 0 | `110` |
-| DIV | 1 | 1 | 0 | 0 | 0 | 0 | `111` |
-| STA | 0 | 1 | 0 | 1 | 0 | 0 | `000` |
+| Instruction | `regwrite` | `alusrc` | `memtoreg` | `memwrite` | `branch` | `jump` | `memaddrsrc` | `aluop[2:0]` |
+|---|---|---|---|---|---|---|---|---|
+| NOP | 0 | 0 | 0 | 0 | 0 | 0 | 0 | `000` |
+| ADD | 1 | 1 | 0 | 0 | 0 | 0 | 0 | `000` |
+| BZ | 0 | 0 | 0 | 0 | 1 | 0 | 0 | `000` |
+| BNZ | 0 | 0 | 0 | 0 | 1 | 0 | 0 | `000` |
+| JMP | 0 | 0 | 0 | 0 | 0 | 1 | 0 | `000` |
+| LDA | 1 | 1 | 1 | 0 | 0 | 0 | 1 | `000` |
+| MULT | 1 | 1 | 0 | 0 | 0 | 0 | 0 | `110` |
+| DIV | 1 | 1 | 0 | 0 | 0 | 0 | 0 | `111` |
+| STA | 0 | 1 | 0 | 1 | 0 | 0 | 1 | `000` |
 
 **Signal definitions:**
 
@@ -134,4 +131,5 @@ Derived from `maindec.sv`.
 | `memtoreg` | Route data-memory read to ACC input (vs. ALU result) |
 | `memwrite` | Write ACC to data memory |
 | `branch` | Enable conditional branch logic |
-| `jump` | Unconditional jump (no opcode assigned yet) |
+| `jump` | Unconditional jump |
+| `memaddrsrc` | Use `sign_ext(imm24)` directly as memory address (LDA/STA); 0 = use ALU result |

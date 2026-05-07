@@ -50,13 +50,10 @@ Every instruction encodes to a single 32-bit word:
 | `BZ` | `0x04` | label / offset | If `ACC == 0`: jump to target |
 | `BNZ` | `0x05` | label / offset | If `ACC ≠ 0`: jump to target |
 | `JMP` | `0x06` | label / offset | Unconditional jump to target |
-| `LDA` | `0x08` | imm | `ACC ← Mem[ACC + imm]` |
+| `LDA` | `0x08` | imm | `ACC ← Mem[imm]` |
 | `MULT` | `0x10` | imm | `ACC ← ACC × imm` |
 | `DIV` | `0x12` | imm | `ACC ← ACC ÷ imm` |
-| `STA` | `0x2B` | imm | `Mem[ACC + imm] ← ACC` |
-
-> **Addressing:** `LDA` and `STA` use base+offset addressing where ACC is the base.
-> At reset (ACC = 0), `LDA addr` loads from `Mem[addr]` and `STA addr` stores to `Mem[addr]`.
+| `STA` | `0x2B` | imm | `Mem[imm] ← ACC` |
 
 ---
 

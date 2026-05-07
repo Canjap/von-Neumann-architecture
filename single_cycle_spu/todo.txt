@@ -12,6 +12,7 @@ spu_controller.sv
 [ ] Replace hardcoded alucontrol[3:0] with shared maindec + aludec
     (same pattern as pipelined_spu/controller.sv)
 [ ] Add memtoreg output signal
+[ ] Add memaddrsrc output signal (asserted for LDA and STA)
 [ ] Add branch and jump output signals
 
 spu_datapath.sv
@@ -28,3 +29,7 @@ spu_datapath.sv
         JMP: always taken)
 [ ] Remove alucontrol=4'b1111 LDA pass-through — it hits the ALU default case and
     returns 0; use memtoreg mux instead
+[ ] Add memory address mux (memaddrsrc):
+      - memaddrsrc=1 (LDA/STA): dmem address = sign_ext(imm24) directly
+      - memaddrsrc=0 (others):  dmem address = alu_out
+      LDA/STA no longer route through the ALU for address calculation

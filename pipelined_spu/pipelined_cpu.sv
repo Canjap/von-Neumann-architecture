@@ -26,6 +26,7 @@ module pipelined_cpu (
     logic        memtoregD, memwriteD;
     logic        alusrcD, regwriteD;
     logic        branchD, jumpD;
+    logic        memaddrsrcD;
     logic [2:0]  alucontrolD;
 
     // Hazard unit → datapath
@@ -45,6 +46,7 @@ module pipelined_cpu (
         .regwriteD    (regwriteD),
         .branchD      (branchD),
         .jumpD        (jumpD),
+        .memaddrsrcD  (memaddrsrcD),
         .alucontrolD  (alucontrolD)
     );
 
@@ -65,6 +67,7 @@ module pipelined_cpu (
         .regwriteD    (regwriteD),
         .branchD      (branchD),
         .jumpD        (jumpD),
+        .memaddrsrcD  (memaddrsrcD),
         .alucontrolD  (alucontrolD),
         // To controller
         .opD          (opD),
