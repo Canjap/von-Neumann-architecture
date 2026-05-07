@@ -24,21 +24,25 @@ module fetch_tb;
     wire [31:0] imm_ext;
 
     // --- Combinational Logic ---
-    wire [23:0] immediateD = ir_out[23:0];
+    wire [25:0] immediateD = ir_out[25:0];
     wire [5:0]  opcodeD    = ir_out[31:26];
 
     // BZ and BNZ logic
     wire is_bz = (opcodeD == 6'h04);
     wire is_bnz = (opcodeD == 6'h05);
 
-    assign branch_taken = (is_bz && zero_reg) || (is_bnz && !zero_reg);
+    assign branch_taken = (is_bz && zero_reg) || (is_bnz && !zero_reg) === 1'b1; // will only banch if either is 1 not X
 
     // Sign-extend immediate and calculate target
-    assign imm_ext = {{8{immediateD[23]}}, immediateD};
+    assign imm_ext = {{6{immediateD[25]}}, immediateD};
     assign branch_target = (pc_out + 4) + (imm_ext << 2);
 
     // Operand2 Multiplexer (ALUSRC logic)
-    assign operand2 = alusrc ? {{8{ir_out[23]}}, ir_out[23:0]} : 32'b0;
+    assign operand2 = alusrc ? imm_ext : 32'b0;
+
+    // --- DATA PATH MUX --- 
+    wire [31:0] acc_in = memtoreg ? read_data : alu_out; //Chooses btwn alu and memory
+    
 
     // --- Module Instantiations ---
 
@@ -63,7 +67,7 @@ module fetch_tb;
         .clk(clk),
         .reset(reset),
         .en(regwrite),
-        .d(alu_out),
+        .d(acc_in),
         .q(acc_val)
     );
 
@@ -78,7 +82,7 @@ module fetch_tb;
     dmem data_mem (
         .clk(clk),
         .we(memwrite),
-        .a(alu_out),
+        .a(imm_ext),
         .wd(acc_val),
         .rd(read_data)
     );
