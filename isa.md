@@ -39,6 +39,7 @@ All instructions are 32 bits wide.
 | `0x02` | ADD | `ACC ← ACC + sign_ext(imm24)` |
 | `0x04` | BZ | If `ACC == 0`: `PC ← branch_target` |
 | `0x05` | BNZ | If `ACC ≠ 0`: `PC ← branch_target` |
+| `0x06` | JMP | `PC ← branch_target` (unconditional) |
 | `0x08` | LDA | `ACC ← Mem[ACC + sign_ext(imm24)]` |
 | `0x10` | MULT | `ACC ← ACC × sign_ext(imm24)` |
 | `0x12` | DIV | `ACC ← ACC ÷ sign_ext(imm24)` |
@@ -61,7 +62,7 @@ sign_ext(imm24) = { {8{imm24[23]}}, imm24[23:0] }
 
 ## Branch Target Calculation
 
-Branch instructions compute their target relative to the **next** instruction's address.
+BZ, BNZ, and JMP all use the same target formula, computed relative to the **next** instruction's address.
 Due to the registered PC design, `pc_out` at decode time already holds `PC_current + 4`.
 
 ```
@@ -70,6 +71,7 @@ branch_target = (pc_out + 4) + (sign_ext(imm24) << 2)
 ```
 
 The immediate is a **word offset** (each unit = 4 bytes). Negative values branch backward.
+JMP is unconditionally taken; BZ and BNZ are conditional on ACC.
 
 **Example:** `BNZ -6` assembled at address `0x14`
 ```
@@ -109,7 +111,7 @@ branch_target = 0x14 + 8 + (-6 × 4) = 0x1C - 24 = 0x04
 
 ## Control Signal Truth Table
 
-Derived from `maindec.sv`. `aluop` shown in 3-bit form (updated from current 2-bit implementation).
+Derived from `maindec.sv`.
 
 | Instruction | `regwrite` | `alusrc` | `memtoreg` | `memwrite` | `branch` | `jump` | `aluop[2:0]` |
 |---|---|---|---|---|---|---|---|
@@ -117,6 +119,7 @@ Derived from `maindec.sv`. `aluop` shown in 3-bit form (updated from current 2-b
 | ADD | 1 | 1 | 0 | 0 | 0 | 0 | `000` |
 | BZ | 0 | 0 | 0 | 0 | 1 | 0 | `000` |
 | BNZ | 0 | 0 | 0 | 0 | 1 | 0 | `000` |
+| JMP | 0 | 0 | 0 | 0 | 0 | 1 | `000` |
 | LDA | 1 | 1 | 1 | 0 | 0 | 0 | `000` |
 | MULT | 1 | 1 | 0 | 0 | 0 | 0 | `110` |
 | DIV | 1 | 1 | 0 | 0 | 0 | 0 | `111` |
@@ -132,11 +135,3 @@ Derived from `maindec.sv`. `aluop` shown in 3-bit form (updated from current 2-b
 | `memwrite` | Write ACC to data memory |
 | `branch` | Enable conditional branch logic |
 | `jump` | Unconditional jump (no opcode assigned yet) |
-
----
-
-## Implementation Notes
-
-- **`maindec.sv`** must be updated to output 3-bit `aluop` (currently 2-bit). The MULT and DIV encodings change from `2'b10`/`2'b11` to `3'b110`/`3'b111`.
-- **`fetch_tb.sv`** does not connect the `memtoreg` mux — the ACC is wired directly to `alu_out`. LDA therefore behaves as load-immediate in that testbench. The full datapath integration must wire a 2:1 mux on ACC's write data, selecting between `alu_out` and `dmem.rd` based on `memtoreg`.
-- **Authoritative modules:** `alu/alu.sv`, `alu/aludec.sv`, `alu/eqcmp.sv`, `combinatorial components/` (adder, signext, sl2, mux2/3/4).
