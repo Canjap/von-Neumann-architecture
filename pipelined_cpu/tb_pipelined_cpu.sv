@@ -6,6 +6,7 @@ module tb_pipelined_cpu;
 
     logic        clk;
     logic        reset;
+    logic [31:0] mem_addrM;
     logic [31:0] aluoutM;
     logic [31:0] writedataM;
     logic        memwriteM;
@@ -13,12 +14,13 @@ module tb_pipelined_cpu;
     pipelined_cpu_top dut (
         .clk        (clk),
         .reset      (reset),
+        .mem_addrM  (mem_addrM),
         .aluoutM    (aluoutM),
         .writedataM (writedataM),
         .memwriteM  (memwriteM)
     );
 
-    // Clock: 10ns period
+    // Clock: 10 ns period
     initial clk = 0;
     always #5 clk = ~clk;
 
@@ -29,14 +31,28 @@ module tb_pipelined_cpu;
         reset = 0;
     end
 
-    // Timeout
-    initial begin
-        #2000;
-        $display("Testbench timeout");
-        $finish;
+    // Print every memory write for tracing
+    always @(posedge clk) begin
+        if (!reset && memwriteM)
+            $display("t=%0t  STA addr=%0d  data=%0d", $time, mem_addrM, writedataM);
     end
 
-    // TODO: add result-checking logic once test program is defined
-    // Example: watch for a STA to a sentinel address to signal program completion
+    // Sentinel: test_prog stores 0 to byte-addr 252 (dmem word 63) when done
+    always @(posedge clk) begin
+        if (!reset && memwriteM && mem_addrM == 32'd252) begin
+            if (writedataM == 32'd0)
+                $display("PASS: countdown reached 0, sentinel write at t=%0t", $time);
+            else
+                $display("FAIL: sentinel write had unexpected data=%0d", writedataM);
+            $finish;
+        end
+    end
+
+    // Timeout
+    initial begin
+        #5000;
+        $display("TIMEOUT: test did not complete within 5000 ns");
+        $finish;
+    end
 
 endmodule

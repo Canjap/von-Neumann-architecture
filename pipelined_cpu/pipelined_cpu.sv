@@ -1,5 +1,4 @@
 // CPU wrapper: connects controller, datapath, and hazard unit.
-// Analogous to cpu.sv in the professor's guide.
 // No regfile — accumulator replaces the register file entirely.
 
 `include "controller.sv"
@@ -14,7 +13,8 @@ module pipelined_cpu (
     input  logic [31:0] instrF,
     // Data memory interface (MEM stage)
     output logic        memwriteM,
-    output logic [31:0] aluoutM,
+    output logic [31:0] mem_addrM,    // muxed address for dmem
+    output logic [31:0] aluoutM,      // raw ALU result (debug)
     output logic [31:0] writedataM,
     input  logic [31:0] readdataM
 );
@@ -28,12 +28,12 @@ module pipelined_cpu (
     logic        regwriteD;
     logic        branchD, jumpD;
     logic        memaddrsrcD;
-    logic [2:0]  alucontrolD;
+    logic [3:0]  alucontrolD;
 
     // Hazard unit → datapath
     logic        stallF, stallD;
     logic        flushD, flushE;
-    logic [1:0]  forwardE;   // ACC forwarding mux select for EX stage
+    logic [1:0]  forwardE;
 
     // Datapath → hazard unit (pipeline register contents)
     logic        regwriteE, regwriteM_haz, regwriteW;
@@ -57,6 +57,7 @@ module pipelined_cpu (
         // Memory interfaces
         .pcF          (pcF),
         .instrF       (instrF),
+        .mem_addrM    (mem_addrM),
         .aluoutM      (aluoutM),
         .writedataM   (writedataM),
         .readdataM    (readdataM),

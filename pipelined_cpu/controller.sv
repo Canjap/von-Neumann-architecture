@@ -15,7 +15,7 @@ module controller (
     output logic       branchD,
     output logic       jumpD,
     output logic       memaddrsrcD,
-    output logic [2:0] alucontrolD
+    output logic [3:0] alucontrolD
 );
 
     logic [2:0] aluopD;

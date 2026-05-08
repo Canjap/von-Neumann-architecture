@@ -1,5 +1,4 @@
 // Top-level: wires together pipelined_cpu, imem, and dmem.
-// Analogous to computer.sv in the professor's guide.
 
 `include "../shared_components/imem_ireg/imem.sv"
 `include "../shared_components/dmem.sv"
@@ -9,7 +8,8 @@ module pipelined_cpu_top (
     input  logic        clk,
     input  logic        reset,
     // Debug/testbench visibility
-    output logic [31:0] aluoutM,
+    output logic [31:0] mem_addrM,    // actual memory address sent to dmem
+    output logic [31:0] aluoutM,      // raw ALU result
     output logic [31:0] writedataM,
     output logic        memwriteM
 );
@@ -22,12 +22,12 @@ module pipelined_cpu_top (
         .pcF        (pcF),
         .instrF     (instrF),
         .memwriteM  (memwriteM),
+        .mem_addrM  (mem_addrM),
         .aluoutM    (aluoutM),
         .writedataM (writedataM),
         .readdataM  (readdataM)
     );
 
-    // TODO: confirm addr slice matches imem address width
     instr_mem imem (
         .addr     (pcF[7:0]),
         .readdata (instrF)
@@ -36,7 +36,7 @@ module pipelined_cpu_top (
     dmem dmem (
         .clk (clk),
         .we  (memwriteM),
-        .a   (aluoutM),
+        .a   (mem_addrM),   // muxed address: sign_ext(imm) for LDA/STA, aluout otherwise
         .wd  (writedataM),
         .rd  (readdataM)
     );
