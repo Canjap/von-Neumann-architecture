@@ -1,8 +1,8 @@
 `timescale 1ns/100ps
 
-`include "pipelined_spu_top.sv"
+`include "pipelined_cpu_top.sv"
 
-module tb_pipelined_spu;
+module tb_pipelined_cpu;
 
     logic        clk;
     logic        reset;
@@ -10,7 +10,7 @@ module tb_pipelined_spu;
     logic [31:0] writedataM;
     logic        memwriteM;
 
-    pipelined_spu_top dut (
+    pipelined_cpu_top dut (
         .clk        (clk),
         .reset      (reset),
         .aluoutM    (aluoutM),
@@ -23,8 +23,8 @@ module tb_pipelined_spu;
     always #5 clk = ~clk;
 
     initial begin
-        $dumpfile("tb_pipelined_spu.vcd");
-        $dumpvars(0, tb_pipelined_spu);
+        $dumpfile("tb_pipelined_cpu.vcd");
+        $dumpvars(0, tb_pipelined_cpu);
         reset = 1; #22;
         reset = 0;
     end

@@ -5,7 +5,7 @@
 `include "../shared_components/dmem.sv"
 `include "pipelined_cpu.sv"
 
-module pipelined_spu_top (
+module pipelined_cpu_top (
     input  logic        clk,
     input  logic        reset,
     // Debug/testbench visibility

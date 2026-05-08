@@ -1,5 +1,5 @@
 
-module spu_datapath(
+module cpu_datapath(
     input  logic        clk, reset,
     input  logic        alusrc, acc_write,
     input  logic [3:0]  alucontrol,

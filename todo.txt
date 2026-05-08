@@ -1,6 +1,6 @@
 Master TODO — von Neumann Accumulator SPU
 ==========================================
-See single_cycle_spu/todo.txt for detailed single-cycle fix list.
+See single_cycle_cpu/todo.txt for detailed single-cycle fix list.
 
 
 SHARED COMPONENTS
@@ -13,12 +13,12 @@ SHARED COMPONENTS
 [ ] .gitignore — add *.vcd, *.vvp, pc_test (simulation artifacts leaking into repo)
 
 
-SINGLE-CYCLE SPU  (see single_cycle_spu/todo.txt for details)
+SINGLE-CYCLE SPU  (see single_cycle_cpu/todo.txt for details)
 --------------
-[ ] spu_controller.sv — fix all opcodes; replace hardcoded alucontrol with shared
+[ ] cpu_controller.sv — fix all opcodes; replace hardcoded alucontrol with shared
       maindec + aludec; add memtoreg, memaddrsrc, branch, jump outputs;
       expand alusrc to 2 bits
-[ ] spu_datapath.sv — wire signext; replace alusrc mux with 3-way mux; add memtoreg
+[ ] cpu_datapath.sv — wire signext; replace alusrc mux with 3-way mux; add memtoreg
       mux; implement branch/jump logic; add memaddrsrc mux; remove LDA pass-through
 [ ] Replace local component copies (acc.sv, adder.sv, alu.sv, mux2.sv, PC.sv) with
       `include paths pointing to shared_components/ to avoid divergence
@@ -53,9 +53,9 @@ hazard.sv:
 [ ] Branch stall — branchstall = branchD && (regwriteE || memtoregM)
 [ ] Drive stallF, stallD, flushE from above; flushD only if branch flushes decode
 
-pipelined_spu_top.sv / tb:
+pipelined_cpu_top.sv / tb:
 [ ] Confirm imem addr slice pcF[7:0] is wide enough for your largest program
-[ ] tb_pipelined_spu.sv — add result-checking: watch for STA to a sentinel address
+[ ] tb_pipelined_cpu.sv — add result-checking: watch for STA to a sentinel address
       (e.g. Mem[255]) and $display / $finish when seen
 [ ] Wire up dmem address through the memaddrsrc mux (currently passes aluoutM directly;
       should pass mem_addrM output of that mux instead)

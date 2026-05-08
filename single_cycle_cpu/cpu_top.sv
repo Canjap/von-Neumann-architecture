@@ -1,4 +1,4 @@
-module spu_top(
+module cpu_top(
     input  logic        clk, reset,
     output logic [31:0] pc,
     input  logic [31:0] instr,
@@ -11,7 +11,7 @@ module spu_top(
     logic [3:0] alucontrol;
 
     // Connect the Controller
-    spu_controller c(
+    cpu_controller c(
         .opcode(instr[31:26]),
         .memwrite(memwrite),
         .alusrc(alusrc),
@@ -20,7 +20,7 @@ module spu_top(
     );
 
     // Connect the Datapath
-    spu_datapath dp(
+    cpu_datapath dp(
         .clk(clk),
         .reset(reset),
         .alusrc(alusrc),

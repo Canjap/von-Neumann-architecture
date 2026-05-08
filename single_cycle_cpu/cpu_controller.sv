@@ -1,4 +1,4 @@
-module spu_controller(
+module cpu_controller(
     input  logic [5:0] opcode,
     output logic       memwrite, alusrc, acc_write,
     output logic [3:0] alucontrol

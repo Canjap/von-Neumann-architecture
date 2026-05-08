@@ -1,5 +1,5 @@
-PROJECT  = pipelined_spu
-TOP      = tb_pipelined_spu
+PROJECT  = pipelined_cpu
+TOP      = tb_pipelined_cpu
 SRC      = $(TOP).sv
 PROG     ?= test_prog
 
