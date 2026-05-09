@@ -27,6 +27,7 @@ module cpu_top (
 
     // opcode is always instr[31:24] — 8 bits, not 6
     assign op = instr[31:24];
+    assign acc_write = ~memwrite & ~branch & ~jump;
 
     // ── controller ───────────────────────────────────────────────────────────
     cpu_controller c (
