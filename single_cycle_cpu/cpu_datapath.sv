@@ -1,171 +1,186 @@
-// =============================================================================
-// cpu_datapath.sv — Single-Cycle CPU Datapath
-// =============================================================================
-// Uses only the modules confirmed present in single_cycle_cpu/:
-//   pc.sv     — ports: clk, reset, stall, branch_taken, branch_target, pc_out
-//   acc.sv    — ports: clk, reset, en, d, q
-//   alu.sv    — ports: input1, input2, alucontrol, result, zero
-//   mux2.sv   — ports: Data0, Data1, Selector, Output  (#parameter bitWidth)
-//
-// signext is implemented as a local assign (no shared_components file present).
-// eqcmp is replaced by alu.sv's zero flag (result == 0), already computed.
-// =============================================================================
-
 module cpu_datapath (
     input  logic        clk, reset,
 
-    // ── control signals from cpu_controller ──────────────────────────────────
-    input  logic [1:0]  alusrc,      // 00=zero  01=sign_ext(imm24)  10=readdata
-    input  logic        acc_write,   // ACC write enable
+    // control signals
+    input  logic [1:0]  alusrc,       // 00=zero  01=signimm  10=readdata
+    input  logic        regwrite,     // 1 → write result to ACC
     input  logic [3:0]  alucontrol,
-    input  logic        memtoreg,    // 1 → ACC ← readdata (LDA)
-    input  logic        memaddrsrc,  // 1 → dmem addr = sign_ext(imm24)
-    input  logic        branch,      // 1 → BZ or BNZ
-    input  logic        jump,        // 1 → JMP
-    input  logic [7:0]  op,          // opcode — tells datapath BZ vs BNZ
+    input  logic        memtoreg,     // 1 → ACC ← readdata (LDA/LDSP)
+    input  logic [1:0]  memaddrsrc,   // 00=aluout  01=signimm  10=SP
+    input  logic        branch,       // BZ or BNZ
+    input  logic        jump,         // JMP or CALL
+    input  logic        callout,      // CALL: latch PC+4 into LR
+    input  logic        ret,          // RET: PC ← LR
+    input  logic        spwrite,      // ADDSP: latch ALU result into SP
+    input  logic        lrwrite,      // SETLR: latch ACC into LR
+    input  logic        usesp,        // ADDSP: ALU input1 = SP instead of ACC
+    input  logic        accsrc,       // GETLR: write-back data = LR
+    input  logic [5:0]  op,           // opcode (BZ vs BNZ discriminator)
 
-    // ── memory interfaces ─────────────────────────────────────────────────────
-    output logic [31:0] pc,          // to imem address port
-    input  logic [31:0] instr,       // from imem
-    output logic [31:0] dmem_addr,   // to dmem address port
-    output logic [31:0] writedata,   // to dmem write data port (ACC value)
-    input  logic [31:0] readdata     // from dmem
+    // memory interfaces
+    output logic [31:0] pc,
+    input  logic [31:0] instr,
+    output logic [31:0] dmem_addr,
+    output logic [31:0] writedata,
+    input  logic [31:0] readdata
 );
 
     // =========================================================================
-    // 1. Instruction fields
+    // Instruction fields
     // =========================================================================
     logic [23:0] imm24;
-    assign imm24 = instr[23:0];
-
-    // Sign extension — no signext.sv present, done inline.
-    // Replicates bit 23 into bits [31:24].
     logic [31:0] sign_ext_imm;
+    assign imm24        = instr[23:0];
     assign sign_ext_imm = {{8{imm24[23]}}, imm24};
 
     // =========================================================================
-    // 2. Internal signals
+    // Internal signals
     // =========================================================================
-    logic [31:0] acc_q;       // accumulator output
-    logic [31:0] alu_result;  // raw ALU output
-    logic        alu_zero;    // alu_result == 0, from alu.sv
-    logic [31:0] acc_wdata;   // data written into ACC (after memtoreg mux)
-    logic [31:0] alu_srcb;    // ALU input B (after alusrc mux)
-    logic [31:0] branch_target;
-    logic        branch_taken;
+    logic [31:0] acc_q;
+    logic [31:0] lr;
+    logic [31:0] sp;
+    logic [31:0] alu_result;
+    logic        alu_zero;
+    logic [31:0] result;        // data written to ACC
+    logic [31:0] alu_input1;    // ACC or SP (ADDSP)
+    logic [31:0] alu_srcb;
 
     // =========================================================================
-    // 3. Branch / jump logic
+    // LR register
+    //   CALL:   lr ← PC + 4  (return address = instruction after CALL)
+    //   SETLR:  lr ← ACC
     // =========================================================================
-    // branch_target = pc_out + 4 + (sign_ext(imm24) << 2)
-    // pc.sv exposes pc_out; pc_out+4 is computed inside pc.sv but not exported,
-    // so we recompute it here for the branch target adder.
-    // WEAKNESS: this duplicates the pc+4 adder in pc.sv. If you later export
-    // pc_plus4 from pc.sv, remove this assign to avoid the redundant adder.
-    assign branch_target = (pc + 32'd4) + (sign_ext_imm << 2);
-
-    // BZ  (0x04): taken if ACC == 0   → alu_zero == 1
-    // BNZ (0x05): taken if ACC != 0   → alu_zero == 0
-    // JMP (0x06): always taken
-    always_comb begin
-        case ({branch, jump})
-            2'b10:   branch_taken = (op == 8'h04) ? alu_zero : ~alu_zero;
-            2'b01:   branch_taken = 1'b1;
-            default: branch_taken = 1'b0;
-        endcase
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset)        lr <= 32'b0;
+        else if (callout) lr <= pc + 32'd4;
+        else if (lrwrite) lr <= acc_q;
     end
 
     // =========================================================================
-    // 4. PC
+    // SP register  (grows downward; initialised to 0x100 = 256)
+    //   ADDSP: sp ← ALU result (sp + sign_ext(imm24))
+    // =========================================================================
+    always_ff @(posedge clk or posedge reset) begin
+        if (reset)        sp <= 32'h100;
+        else if (spwrite) sp <= alu_result;
+    end
+
+    // =========================================================================
+    // Branch / jump target
+    //   Matches the pipelined formula so the same assembled .hex runs on both:
+    //   target = (pc + 4 + 4) + (sign_ext(imm24) << 2)
+    //   RET overrides target to LR.
+    // =========================================================================
+    logic [31:0] branch_target;
+    logic        branch_taken;
+
+    assign branch_target = ret ? lr
+                               : ((pc + 32'd8) + {sign_ext_imm[29:0], 2'b00});
+
+    assign branch_taken  = ret
+                        || jump
+                        || (branch && op == 6'h04 &&  alu_zero)   // BZ
+                        || (branch && op == 6'h05 && !alu_zero);  // BNZ
+
+    // =========================================================================
+    // PC
     // =========================================================================
     pc pcreg (
         .clk           (clk),
         .reset         (reset),
-        .stall         (1'b0),         // single-cycle: never stall
+        .stall         (1'b0),
         .branch_taken  (branch_taken),
         .branch_target (branch_target),
         .pc_out        (pc)
     );
 
     // =========================================================================
-    // 5. ALU source mux — 3-way, built from two mux2 instances
+    // ALU input1 mux  (ACC normally; SP for ADDSP)
     // =========================================================================
-    // Stage 1: choose between zero and sign_ext_imm  (covers 00 and 01)
-    // Stage 2: choose between stage-1 output and readdata  (covers 10)
-    //
-    // alusrc[0] selects stage 1:  0→zero  1→sign_ext_imm
-    // alusrc[1] selects stage 2:  0→stage1  1→readdata
-    //
-    // WEAKNESS: an illegal alusrc=11 would pick readdata over sign_ext_imm,
-    // which may be unintentional. Gate with an assertion in simulation.
-    logic [31:0] alusrcb_stage1;
+    mux2 #(.bitWidth(32)) alu1mux (
+        .Data0    (acc_q),
+        .Data1    (sp),
+        .Selector (usesp),
+        .Output   (alu_input1)
+    );
+
+    // =========================================================================
+    // ALU source-B mux  (3-way via two mux2)
+    //   alusrc 00→zero  01→signimm  10→readdata
+    // =========================================================================
+    logic [31:0] alusrcb_s1;
 
     mux2 #(.bitWidth(32)) srcb_mux1 (
         .Data0    (32'h0),
         .Data1    (sign_ext_imm),
         .Selector (alusrc[0]),
-        .Output   (alusrcb_stage1)
+        .Output   (alusrcb_s1)
     );
-
     mux2 #(.bitWidth(32)) srcb_mux2 (
-        .Data0    (alusrcb_stage1),
+        .Data0    (alusrcb_s1),
         .Data1    (readdata),
         .Selector (alusrc[1]),
         .Output   (alu_srcb)
     );
 
     // =========================================================================
-    // 6. ALU
+    // ALU
     // =========================================================================
     alu main_alu (
-        .input1     (acc_q),
+        .input1     (alu_input1),
         .input2     (alu_srcb),
         .alucontrol (alucontrol),
         .result     (alu_result),
-        .zero       (alu_zero)    // used for BZ / BNZ — replaces eqcmp
+        .zero       (alu_zero)
     );
 
     // =========================================================================
-    // 7. memtoreg mux — selects ACC write data
+    // Write-back mux  selector = {accsrc, memtoreg}
+    //   2'b00 → alu_result   (arithmetic / ADDM / SUBM / etc.)
+    //   2'b01 → readdata     (LDA, LDSP)
+    //   2'b10 → lr           (GETLR)
     // =========================================================================
-    // memtoreg=1 (LDA): ACC ← readdata
-    // memtoreg=0 (ALU): ACC ← alu_result
-    // This replaces the broken alucontrol=4'b1111 pass-through that hit the
-    // ALU default case and returned 0 instead of readdata.
-    mux2 #(.bitWidth(32)) memtoreg_mux (
-        .Data0    (alu_result),
-        .Data1    (readdata),
-        .Selector (memtoreg),
-        .Output   (acc_wdata)
-    );
+    always_comb begin
+        case ({accsrc, memtoreg})
+            2'b01:   result = readdata;
+            2'b10:   result = lr;
+            default: result = alu_result;
+        endcase
+    end
 
     // =========================================================================
-    // 8. Accumulator
+    // Accumulator
     // =========================================================================
     acc main_acc (
         .clk   (clk),
         .reset (reset),
-        .en    (acc_write),
-        .d     (acc_wdata),   // fed through memtoreg mux, not raw alu_result
+        .en    (regwrite),
+        .d     (result),
         .q     (acc_q)
     );
 
     // =========================================================================
-    // 9. Data memory address mux (memaddrsrc)
+    // Data memory address mux  (3-way via two mux2)
+    //   memaddrsrc 00→aluout  01→signimm  10→SP
     // =========================================================================
-    // memaddrsrc=1 (LDA/STA): dmem addr = sign_ext(imm24) — bypasses ALU
-    // memaddrsrc=0 (others):  dmem addr = alu_result
-    mux2 #(.bitWidth(32)) dmemaddr_mux (
+    logic [31:0] memaddr_s1;
+
+    mux2 #(.bitWidth(32)) memaddr_mux1 (
         .Data0    (alu_result),
         .Data1    (sign_ext_imm),
-        .Selector (memaddrsrc),
+        .Selector (memaddrsrc[0]),
+        .Output   (memaddr_s1)
+    );
+    mux2 #(.bitWidth(32)) memaddr_mux2 (
+        .Data0    (memaddr_s1),
+        .Data1    (sp),
+        .Selector (memaddrsrc[1]),
         .Output   (dmem_addr)
     );
 
     // =========================================================================
-    // 10. Data memory write data
+    // Data memory write data — always ACC (STA, STSP)
     // =========================================================================
-    // STA always writes ACC; no mux needed.
     assign writedata = acc_q;
 
 endmodule
