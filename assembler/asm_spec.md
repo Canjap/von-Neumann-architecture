@@ -61,6 +61,22 @@ Every instruction encodes to a single 32-bit word:
 
 ---
 
+## Memory Addressing
+
+All `addr` operands (LDA, STA, ADDM, SUBM, MULTM, DIVM) are **byte addresses**. The data memory is word-addressed internally using `addr[7:2]`, so the lower two bits are ignored. Addresses must be **multiples of 4** to access distinct words.
+
+| Word | Byte address to use |
+|------|---------------------|
+| 0    | 0                   |
+| 1    | 4                   |
+| 2    | 8                   |
+| 3    | 12                  |
+| n    | n × 4               |
+
+Using consecutive integers (0, 1, 2, …) as addresses is a common mistake — they all resolve to word 0.
+
+---
+
 ## Branch and Jump Targets
 
 BZ, BNZ, and JMP all use the same target formula in hardware:

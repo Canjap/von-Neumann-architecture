@@ -56,7 +56,8 @@ module datapath (
     output logic        regwriteM_dp,
     output logic        regwriteW,
     output logic        memtoregE,
-    output logic        memtoregM_dp
+    output logic        memtoregM_dp,
+    output logic        memwriteE      // needed for M-type stall detection
 );
 
     // ---- Forward-declared WB signals (used in EX forwarding mux) ----
@@ -131,12 +132,11 @@ module datapath (
     // ID/EX PIPELINE REGISTER
     // Flush on: reset or flushE (load-use / branch stall).
     // =========================================================
-    logic        memwriteE;
     logic [1:0]  alusrcE;
     logic        memaddrsrcE;
     logic [3:0]  alucontrolE;
     logic [31:0] accE, signimmE;
-    // regwriteE, memtoregE are outputs (declared in port list)
+    // regwriteE, memtoregE, memwriteE are outputs (declared in port list)
 
     always_ff @(posedge clk or posedge reset) begin
         if (reset || flushE) begin
@@ -208,13 +208,20 @@ module datapath (
     // =========================================================
     // MEM STAGE
     // Address mux: LDA/STA/M-type use immediate directly; others use ALU result.
+    // M-type bypass: when an M-type instruction is in EX (memaddrsrcE=1,
+    // memtoregE=0), present signimmE directly to dmem so readdataM is available
+    // combinatorially in the same cycle as the ALU (srcbE = readdataM).
+    // The hazard unit's mstall guarantees a NOP is in MEM at this moment,
+    // so the bypass never conflicts with a real memory read or write.
     // =========================================================
+    logic [31:0] mem_addr_mux;
     mux2 #(32) memaddrmux (
-        .Data0   (aluoutM),    // 0: ALU result as address (non-memory instructions)
-        .Data1   (signimmM),   // 1: sign-extended immediate (LDA/STA/M-type)
+        .Data0   (aluoutM),
+        .Data1   (signimmM),
         .Selector(memaddrsrcM),
-        .Output  (mem_addrM)
+        .Output  (mem_addr_mux)
     );
+    assign mem_addrM = (memaddrsrcE && !memtoregE) ? signimmE : mem_addr_mux;
 
     // =========================================================
     // MEM/WB PIPELINE REGISTER

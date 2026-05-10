@@ -40,10 +40,10 @@ module tb_pipelined_cpu;
     // Sentinel: test_prog stores 0 to byte-addr 252 (dmem word 63) when done
     always @(posedge clk) begin
         if (!reset && memwriteM && mem_addrM == 32'd252) begin
-            if (writedataM == 32'd0)
-                $display("PASS: countdown reached 0, sentinel write at t=%0t", $time);
+            if (writedataM == 32'd34)
+                $display("PASS: F9=%0d written to sentinel at t=%0t", writedataM, $time);
             else
-                $display("FAIL: sentinel write had unexpected data=%0d", writedataM);
+                $display("FAIL: expected 34 at sentinel, got %0d at t=%0t", writedataM, $time);
             $finish;
         end
     end

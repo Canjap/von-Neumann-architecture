@@ -38,6 +38,7 @@ module pipelined_cpu (
     // Datapath → hazard unit (pipeline register contents)
     logic        regwriteE, regwriteM_haz, regwriteW;
     logic        memtoregE,  memtoregM_haz;
+    logic        memwriteE_dp;
 
     controller ctrl (
         .opD          (opD),
@@ -84,21 +85,25 @@ module pipelined_cpu (
         .regwriteM_dp (regwriteM_haz),
         .regwriteW    (regwriteW),
         .memtoregE    (memtoregE),
-        .memtoregM_dp (memtoregM_haz)
+        .memtoregM_dp (memtoregM_haz),
+        .memwriteE    (memwriteE_dp)
     );
 
     hazard haz (
-        .regwriteE  (regwriteE),
-        .regwriteM  (regwriteM_haz),
-        .regwriteW  (regwriteW),
-        .memtoregE  (memtoregE),
-        .memtoregM  (memtoregM_haz),
-        .branchD    (branchD),
-        .forwardE   (forwardE),
-        .stallF     (stallF),
-        .stallD     (stallD),
-        .flushD     (flushD),
-        .flushE     (flushE)
+        .regwriteE   (regwriteE),
+        .regwriteM   (regwriteM_haz),
+        .regwriteW   (regwriteW),
+        .memtoregE   (memtoregE),
+        .memtoregM   (memtoregM_haz),
+        .memwriteE   (memwriteE_dp),
+        .memaddrsrcD (memaddrsrcD),
+        .memtoregD   (memtoregD),
+        .branchD     (branchD),
+        .forwardE    (forwardE),
+        .stallF      (stallF),
+        .stallD      (stallD),
+        .flushD      (flushD),
+        .flushE      (flushE)
     );
 
 endmodule
