@@ -9,13 +9,12 @@ module instr_mem #(
     logic [n-1:0] RAM [0:(2**r)-1];
 
     initial begin
-        // Zero out memory to prevent 'X' in GTKWave for unwritten spots
-        for (int i = 0; i < (2**r); i++) begin
+        string prog_file;
+        for (int i = 0; i < (2**r); i++)
             RAM[i] = {n{1'b0}};
-        end
-        
-        // Load the hex file
-        $readmemh("test_prog.hex", RAM);
+        if (!$value$plusargs("PROG=%s", prog_file))
+            prog_file = "test_prog.hex";
+        $readmemh(prog_file, RAM);
     end
 
     // 3. Indexing Logic

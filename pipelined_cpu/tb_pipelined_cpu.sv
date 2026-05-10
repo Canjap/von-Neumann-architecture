@@ -4,7 +4,6 @@
 
 module tb_pipelined_cpu;
 
-    // --- Signals ---
     logic        clk;
     logic        reset;
     logic [31:0] mem_addrM;
@@ -12,7 +11,6 @@ module tb_pipelined_cpu;
     logic [31:0] writedataM;
     logic        memwriteM;
 
-    // --- Device Under Test (DUT) ---
     pipelined_cpu_top dut (
         .clk        (clk),
         .reset      (reset),
@@ -22,55 +20,63 @@ module tb_pipelined_cpu;
         .memwriteM  (memwriteM)
     );
 
-    // --- Clock Generation (10ns period) ---
-    initial begin
-        clk = 0;
-        forever #5 clk = ~clk;
-    end
+    // Clock: 10 ns period
+    initial clk = 0;
+    always #5 clk = ~clk;
 
-    // --- Reset and Waveform Logic ---
     initial begin
         $dumpfile("tb_pipelined_cpu.vcd");
         $dumpvars(0, tb_pipelined_cpu);
-        
-        reset = 1;
-        #22;
+        reset = 1; #22;
         reset = 0;
     end
 
-    // --- Runtime Monitor ---
+    // Print every memory write for tracing
     always @(posedge clk) begin
-        if (!reset) begin
-            // FIXED: Using aluoutE_val to match the updated datapath.sv
-            $display("t=%0t | PC=%h | Instr=%h | ACC_EX=%d", 
-                     $time, 
-                     dut.cpu.dp.pcF, 
-                     dut.cpu.instrF, 
-                     dut.cpu.dp.aluoutE_val);
-        end
+        if (!reset && memwriteM)
+            $display("t=%0t  STA addr=%0d  data=%0d", $time, mem_addrM, writedataM);
     end
 
-    // --- Memory Write Tracker & Sentinel ---
+    // Sentinel: selected by +TEST=<name> plusarg.
+    //   factorial : addr=0,   expected 24
+    //   countdown : addr=252, expected 0
+    //   fibonacci : addr=252, expected 34
+    string test_name;
+    initial begin
+        if (!$value$plusargs("TEST=%s", test_name))
+            test_name = "factorial";
+    end
+
     always @(posedge clk) begin
         if (!reset && memwriteM) begin
-            $display("t=%0t | MEM_WRITE | Addr=%d | Data=%d", $time, mem_addrM, writedataM);
-            
-            // Sentinel: The countdown program stores 0 to addr 252 when done
-            if (mem_addrM == 32'd252) begin
-                $display("\n--- SENTINEL REACHED ---");
-                if (writedataM == 32'd0)
-                    $display("RESULT: PASS (Countdown reached 0)");
+            if (test_name == "factorial" && mem_addrM == 32'd0) begin
+                if (writedataM == 32'd24)
+                    $display("PASS: factorial(4)=%0d written to sentinel at t=%0t", writedataM, $time);
                 else
-                    $display("RESULT: FAIL (Expected 0, Got %d)", writedataM);
+                    $display("FAIL: expected 24 at sentinel, got %0d at t=%0t", writedataM, $time);
+                $finish;
+            end
+            if (test_name == "countdown" && mem_addrM == 32'd252) begin
+                if (writedataM == 32'd0)
+                    $display("PASS: countdown reached 0 at t=%0t", $time);
+                else
+                    $display("FAIL: countdown expected 0 at addr 252, got %0d at t=%0t", writedataM, $time);
+                $finish;
+            end
+            if (test_name == "fibonacci" && mem_addrM == 32'd252) begin
+                if (writedataM == 32'd34)
+                    $display("PASS: fibonacci(9)=%0d written to sentinel at t=%0t", writedataM, $time);
+                else
+                    $display("FAIL: fibonacci expected 34 at addr 252, got %0d at t=%0t", writedataM, $time);
                 $finish;
             end
         end
     end
 
-    // --- Global Timeout ---
+    // Timeout
     initial begin
-        #100000; 
-        $display("\nTIMEOUT: Simulation forced stop.");
+        #20000;
+        $display("TIMEOUT: test did not complete within 20000 ns");
         $finish;
     end
 

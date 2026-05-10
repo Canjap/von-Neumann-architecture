@@ -32,4 +32,3 @@ loop:
 ; --- done ---
     LDA  4      ; ACC = F9 = 34
     STA  252    ; sentinel: write result to byte-addr 252 (dmem word 63)
-1
