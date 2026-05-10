@@ -15,9 +15,20 @@ opcodes = {
     'div':   0x12,
     'divm':  0x13,
     'sta':   0x2B,
+    # Procedure support (P1-P3)
+    'call':  0x0E,
+    'ret':   0x0F,
+    'addsp': 0x14,
+    'stsp':  0x15,
+    'ldsp':  0x16,
+    'getlr': 0x17,
+    'setlr': 0x18,
 }
 
-branch_ops = {'bz', 'bnz', 'jmp'}
+branch_ops = {'bz', 'bnz', 'jmp', 'call'}
+
+# Instructions that take no operand (imm = 0)
+no_operand_ops = {'nop', 'ret', 'stsp', 'ldsp', 'getlr', 'setlr'}
 
 def assemble(asm_file, exe_file):
     with open(asm_file, 'r') as f:
@@ -60,7 +71,7 @@ def assemble(asm_file, exe_file):
             print(f"Unknown op: {op}")
             sys.exit(1)
 
-        if op == 'nop':
+        if op in no_operand_ops:
             imm = 0
         elif op in branch_ops:
             target = parts[1]

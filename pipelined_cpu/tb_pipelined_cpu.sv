@@ -37,21 +37,21 @@ module tb_pipelined_cpu;
             $display("t=%0t  STA addr=%0d  data=%0d", $time, mem_addrM, writedataM);
     end
 
-    // Sentinel: test_prog stores 0 to byte-addr 252 (dmem word 63) when done
+    // Sentinel: factorial.asm stores result to byte-addr 0 when done
     always @(posedge clk) begin
-        if (!reset && memwriteM && mem_addrM == 32'd252) begin
-            if (writedataM == 32'd34)
-                $display("PASS: F9=%0d written to sentinel at t=%0t", writedataM, $time);
+        if (!reset && memwriteM && mem_addrM == 32'd0) begin
+            if (writedataM == 32'd24)
+                $display("PASS: factorial(4)=%0d written to sentinel at t=%0t", writedataM, $time);
             else
-                $display("FAIL: expected 34 at sentinel, got %0d at t=%0t", writedataM, $time);
+                $display("FAIL: expected 24 at sentinel, got %0d at t=%0t", writedataM, $time);
             $finish;
         end
     end
 
     // Timeout
     initial begin
-        #5000;
-        $display("TIMEOUT: test did not complete within 5000 ns");
+        #20000;
+        $display("TIMEOUT: test did not complete within 20000 ns");
         $finish;
     end
 

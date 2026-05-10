@@ -58,6 +58,68 @@ Every instruction encodes to a single 32-bit word:
 | `DIV`   | `0x12` | imm         | `ACC ← ACC ÷ imm` |
 | `DIVM`  | `0x13` | addr        | `ACC ← ACC ÷ Mem[addr]` |
 | `STA`   | `0x2B` | addr        | `Mem[addr] ← ACC` |
+| `CALL`  | `0x0E` | label / offset | `LR ← PC+4; PC ← target` |
+| `RET`   | `0x0F` | —           | `PC ← LR` |
+| `ADDSP` | `0x14` | imm         | `SP ← SP + imm` |
+| `STSP`  | `0x15` | —           | `Mem[SP] ← ACC` |
+| `LDSP`  | `0x16` | —           | `ACC ← Mem[SP]` |
+| `GETLR` | `0x17` | —           | `ACC ← LR` |
+| `SETLR` | `0x18` | —           | `LR ← ACC` |
+
+---
+
+## Stack and Procedure Calls
+
+The stack pointer **SP** resets to `0x100` (256) and grows **downward**. All stack accesses are word-aligned (multiples of 4).
+
+### CALL and RET
+
+```asm
+    CALL  proc      ; LR = address of next instruction; jump to proc
+    ; ... execution resumes here after RET
+
+proc:
+    ; body
+    RET             ; PC ← LR
+```
+
+### Push and pop sequences
+
+Since there is no single PUSH/POP instruction, use two-instruction sequences:
+
+```asm
+; Push ACC onto stack:
+    ADDSP -4        ; SP = SP - 4
+    STSP            ; Mem[SP] = ACC
+
+; Pop ACC from stack:
+    LDSP            ; ACC = Mem[SP]
+    ADDSP 4         ; SP = SP + 4
+
+; Push LR onto stack (save return address before a nested CALL):
+    GETLR           ; ACC = LR
+    ADDSP -4        ; SP = SP - 4
+    STSP            ; Mem[SP] = LR
+
+; Pop LR from stack (restore return address):
+    LDSP            ; ACC = Mem[SP]
+    ADDSP 4         ; SP = SP + 4
+    SETLR           ; LR = ACC
+```
+
+### Calling convention
+
+- **Argument**: ACC on entry to callee
+- **Return value**: ACC on RET
+- **Non-leaf functions** must save LR before any nested CALL and restore it before RET
+- Stack space is limited to the dmem size (256 bytes); reserve the lower addresses for static data
+
+### Hazard notes
+
+The hardware inserts stall cycles automatically:
+- Up to 3 stall cycles between `ADDSP` and `STSP`/`LDSP` (SP register takes 3 cycles to update)
+- 2 stall cycles between `SETLR` and `RET`/`GETLR`
+- No stall needed between `CALL` and `RET` (LR is written immediately in the decode stage)
 
 ---
 

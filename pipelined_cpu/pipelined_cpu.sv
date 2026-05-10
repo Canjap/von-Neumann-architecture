@@ -27,8 +27,12 @@ module pipelined_cpu (
     logic [1:0]  alusrcD;
     logic        regwriteD;
     logic        branchD, jumpD;
-    logic        memaddrsrcD;
+    logic [1:0]  memaddrsrcD;   // widened to 2 bits
     logic [3:0]  alucontrolD;
+    // New procedure control signals
+    logic        callD, retD;
+    logic        spwriteD, lrwriteD;
+    logic        usespD, accsrcD;
 
     // Hazard unit → datapath
     logic        stallF, stallD;
@@ -39,6 +43,8 @@ module pipelined_cpu (
     logic        regwriteE, regwriteM_haz, regwriteW;
     logic        memtoregE,  memtoregM_haz;
     logic        memwriteE_dp;
+    logic        spwriteE_dp, spwriteM_dp2, spwriteW_dp;
+    logic        lrwriteE_dp, lrwriteM_dp2;
 
     controller ctrl (
         .opD          (opD),
@@ -49,7 +55,13 @@ module pipelined_cpu (
         .branchD      (branchD),
         .jumpD        (jumpD),
         .memaddrsrcD  (memaddrsrcD),
-        .alucontrolD  (alucontrolD)
+        .alucontrolD  (alucontrolD),
+        .callD        (callD),
+        .retD         (retD),
+        .spwriteD     (spwriteD),
+        .lrwriteD     (lrwriteD),
+        .usespD       (usespD),
+        .accsrcD      (accsrcD)
     );
 
     datapath dp (
@@ -72,6 +84,12 @@ module pipelined_cpu (
         .jumpD        (jumpD),
         .memaddrsrcD  (memaddrsrcD),
         .alucontrolD  (alucontrolD),
+        .callD        (callD),
+        .retD         (retD),
+        .spwriteD     (spwriteD),
+        .lrwriteD     (lrwriteD),
+        .usespD       (usespD),
+        .accsrcD      (accsrcD),
         // To controller
         .opD          (opD),
         // From hazard unit
@@ -86,7 +104,12 @@ module pipelined_cpu (
         .regwriteW    (regwriteW),
         .memtoregE    (memtoregE),
         .memtoregM_dp (memtoregM_haz),
-        .memwriteE    (memwriteE_dp)
+        .memwriteE    (memwriteE_dp),
+        .spwriteE     (spwriteE_dp),
+        .spwriteM_dp  (spwriteM_dp2),
+        .spwriteW_out (spwriteW_dp),
+        .lrwriteE     (lrwriteE_dp),
+        .lrwriteM_dp  (lrwriteM_dp2)
     );
 
     hazard haz (
@@ -99,6 +122,14 @@ module pipelined_cpu (
         .memaddrsrcD (memaddrsrcD),
         .memtoregD   (memtoregD),
         .branchD     (branchD),
+        .usespD      (usespD),
+        .spwriteE    (spwriteE_dp),
+        .spwriteM    (spwriteM_dp2),
+        .spwriteW    (spwriteW_dp),
+        .retD        (retD),
+        .accsrcD     (accsrcD),
+        .lrwriteE    (lrwriteE_dp),
+        .lrwriteM    (lrwriteM_dp2),
         .forwardE    (forwardE),
         .stallF      (stallF),
         .stallD      (stallD),

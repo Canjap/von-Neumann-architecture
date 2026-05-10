@@ -6,16 +6,21 @@
 //   can use readdataW from WB via forward 01.
 //
 // M-type stall (mstall): ADDM/SUBM/MULTM/DIVM in ID.
-//   These instructions use alusrcE=10 (srcbE = readdataM) in EX.
-//   The datapath bypasses signimmE directly to dmem when M-type is in EX,
-//   so readdataM is available combinatorially in the same cycle.
-//   BUT the bypass conflicts if MEM simultaneously holds a real memory access.
-//   Stall for 1 cycle when M-type is in ID and EX contains any instruction
-//   that writes ACC or memory (regwriteE || memwriteE). This guarantees a
-//   NOP bubble is in MEM by the time the M-type reaches EX.
+//   alusrcE=10 (srcbE = readdataM) in EX. The datapath bypasses signimmE
+//   directly to dmem when M-type is in EX, so readdataM is available
+//   combinatorially. Stall for 1 cycle when M-type is in ID and EX contains
+//   any instruction that writes ACC or memory (regwriteE || memwriteE).
+//   mstall checks memaddrsrcD == 2'b01 to avoid triggering on STSP/LDSP.
 //
 // Branch stall (branchstall): branch in ID cannot safely read ACC if a write
 //   is still in EX, or an LDA result is still in MEM.
+//
+// SP stall (spstall): STSP, LDSP, or a second ADDSP in ID cannot safely use
+//   the SP register value if a prior ADDSP result is still in EX/MEM/WB.
+//   Stall until spwriteW clears (ADDSP has exited WB and SP is current).
+//
+// LR stall (lrstall): RET or GETLR in ID cannot safely read LR if SETLR
+//   is still in EX or MEM. (CALL writes LR directly in ID — no hazard.)
 //
 // Branch flush: handled inside the datapath (branch_taken flushes IF/ID).
 
@@ -29,16 +34,23 @@ module hazard (
     input  logic       memwriteE,   // 1 = STA is in EX
 
     // Decode-stage control signals — from controller (via pipelined_cpu)
-    input  logic       memaddrsrcD, // 1 = instruction uses direct immediate address
-    input  logic       memtoregD,   // 1 = instruction is a load (LDA)
-
-    // Branch signal — from controller
-    input  logic       branchD,     // 1 = branch instruction is in ID
+    input  logic [1:0] memaddrsrcD, // 2'b01=M-type/LDA/STA  2'b10=SP-based
+    input  logic       memtoregD,   // 1 = LDA in ID
+    input  logic       branchD,     // 1 = branch in ID
+    // New signals for SP/LR hazards
+    input  logic       usespD,      // 1 = ADDSP in ID (reads SP as ALU input)
+    input  logic       spwriteE,    // 1 = ADDSP in EX
+    input  logic       spwriteM,    // 1 = ADDSP in MEM
+    input  logic       spwriteW,    // 1 = ADDSP in WB
+    input  logic       retD,        // 1 = RET in ID (reads LR)
+    input  logic       accsrcD,     // 1 = GETLR in ID (reads LR)
+    input  logic       lrwriteE,    // 1 = SETLR in EX
+    input  logic       lrwriteM,    // 1 = SETLR in MEM
 
     // Forwarding select for ACC input in EX stage
     // 2'b00 = use accE  (no hazard)
-    // 2'b01 = forward resultW  from WB (includes LDA: resultW = readdataW)
-    // 2'b10 = forward aluoutM  from MEM (ALU result one stage back)
+    // 2'b01 = forward resultW  from WB
+    // 2'b10 = forward aluoutM  from MEM (priority)
     output logic [1:0] forwardE,
 
     // Stall / flush control
@@ -55,23 +67,29 @@ module hazard (
         else                forwardE = 2'b00;
     end
 
-    // Load-use stall: LDA in EX, next instruction needs ACC
+    // Load-use stall: LDA in EX
     logic lwstall;
     assign lwstall = memtoregE;
 
-    // M-type stall: ADDM/SUBM/MULTM/DIVM in ID (memaddrsrcD=1, memtoregD=0),
-    // and EX holds a real instruction (not a NOP bubble) that would conflict
-    // with the EX→dmem address bypass.
+    // M-type stall: ADDM/SUBM/MULTM/DIVM in ID (memaddrsrcD==2'b01, memtoregD=0)
     logic mstall;
-    assign mstall = (memaddrsrcD && !memtoregD) && (regwriteE || memwriteE);
+    assign mstall = (memaddrsrcD == 2'b01 && !memtoregD) && (regwriteE || memwriteE);
 
-    // Branch stall: branch in ID needs correct ACC; stall while a write is
-    // in EX or an LDA result is still in MEM.
+    // Branch stall
     logic branchstall;
-    assign branchstall = branchD && (regwriteE || memtoregM);
+    assign branchstall = branchD && (regwriteE || memtoregM || regwriteW);
+
+    // SP stall: any instruction that reads SP (STSP/LDSP: memaddrsrcD==2'b10,
+    // or ADDSP: usespD) must wait until a prior ADDSP has cleared WB.
+    logic spstall;
+    assign spstall = (memaddrsrcD == 2'b10 || usespD) && (spwriteE || spwriteM || spwriteW);
+
+    // LR stall: RET (retD) or GETLR (accsrcD) reads LR; stall while SETLR in EX/MEM.
+    logic lrstall;
+    assign lrstall = (retD || accsrcD) && (lrwriteE || lrwriteM);
 
     logic stall;
-    assign stall  = lwstall || mstall || branchstall;
+    assign stall  = lwstall || mstall || branchstall || spstall || lrstall;
     assign stallF = stall;
     assign stallD = stall;
     assign flushE = stall;

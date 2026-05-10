@@ -1,5 +1,0 @@
-00000000 // 0x00: NOP (Start clean)
-08000064 // 0x04: LDA 100 (Loading a 0 we initialized)
-08ffffff // 0x08: ADD -1 (This will still be X if LDA fails)
-0c000064 // 0x0c: STA 100
-14fffffa // 0x10: BNZ -6
