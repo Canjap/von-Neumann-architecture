@@ -1,0 +1,65 @@
+ISA DESIGN:
+ALU Operand Size	
+Address Bus Size	
+Addressability	
+Register File Size	
+Opcode Size	
+Function Size	
+shamt Size	
+Instruction Size	
+PC Increment	
+Immediate Size	
+R-type Instruction support	
+I-type Instruction support	
+Memory Reference Support	
+J-type Instruction support	
+R-type Instructions	
+I-type Instructions	
+J-type Instructions
+
+MEMORY DESIGN & IMPLEMENTATION			
+Instruction Memory	
+Data Memory	
+Memory Layout	
+Program Load into Processor
+
+PROCESSOR DESIGN & IMPLEMENTATION
+Clock Design	
+Overall Control Signals (regwrite,regdst,alusrc,branch,memwrite,memtoreg,jump,aluop[])	
+Multiplexors (regdst,alusrc,pcsrc,mem2reg)	
+Main Decoder Details	
+ALU Decoder	
+R-Type Instruction Implimentation
+I-Type Instruction ImImplimentationpl	
+J-Type Instruction Implimentation	
+PC -- Increment for R- and I-types	
+PC -- Increment for J-type	
+PC -- Increment for Cond Branch	
+Datapath Design (imem, dmem, alu, regfile, signext, sll)	
+PC increment adders (pc+1 adder, pc+jump adder, shift logical left)	
+Register File	
+Sign Entender(s)	
+ALU (and,or,nor,add,sub,slt)	
+Controller -- Datapath Integration	
+Program Load Integration	
+Provided Assembly Program in code	
+Hand-compiled Program	
+Program 0 - Simple Assembly Code	
+Program 1 - Leaf Procedure Code	
+Program 2 - Nested Procedure Code	
+Program 3 - Recursive Procedure Code																			
+
+DOCUMENTATION
+Overall Design Explanation	
+Overall Design Diagrams	
+R-type timing diagram	
+I-type timing diagram	
+J-type timing diagram	
+Instructions to Successfully Demo
+
+EXTRA CREDIT
+Programmatic Assembler	
+Verilog Test Benches for each element	
+Adding Structural Modeling or Delays	
+Demo Video Recording	
+Pipeline Design Support

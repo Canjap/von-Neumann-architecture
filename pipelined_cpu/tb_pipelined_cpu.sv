@@ -70,6 +70,20 @@ module tb_pipelined_cpu;
                     $display("FAIL: fibonacci expected 34 at addr 252, got %0d at t=%0t", writedataM, $time);
                 $finish;
             end
+            if (test_name == "leaf" && mem_addrM == 32'd0) begin
+                if (writedataM == 32'd15)
+                    $display("PASS: add_ten(5)=%0d written to sentinel at t=%0t", writedataM, $time);
+                else
+                    $display("FAIL: leaf expected 15 at sentinel, got %0d at t=%0t", writedataM, $time);
+                $finish;
+            end
+            if (test_name == "nested" && mem_addrM == 32'd0) begin
+                if (writedataM == 32'd10)
+                    $display("PASS: nested result=%0d written to sentinel at t=%0t", writedataM, $time);
+                else
+                    $display("FAIL: nested expected 10 at sentinel, got %0d at t=%0t", writedataM, $time);
+                $finish;
+            end
         end
     end
 
