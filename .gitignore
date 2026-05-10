@@ -1,0 +1,6 @@
+*.hex
+
+# Simulation artifacts
+*.vcd
+*.vvp
+debug_output.txt
