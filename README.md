@@ -103,11 +103,3 @@ The Pipelined CPU includes hardware-level stall logic. However, the assembly lan
 
 * **SP Updates:** Up to 3 stall cycles may be inserted between `ADDSP` and subsequent stack operations.
 * **Link Register:** 2 stall cycles between `SETLR` and `RET`/`GETLR`.
-
-## Project Rubric Compliance
-
-This implementation covers the following requirements from the Final Rubric:
-
-* **ISA Design:** Full 32-bit specification, including J-type and I-type support.
-* **Processor Design:** Implementation of `maindec`, `aludec`, and functional datapaths for both single-cycle and pipelined designs.
-* **Documentation:** Detailed timing and design explanations provided in `isa.md` and `asm_spec.md`.
