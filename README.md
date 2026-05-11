@@ -77,6 +77,14 @@ make
 
 ```
 
+![Single-Cycle CPU running countdown in GTKWave](single_cycle_running_countdown.png)
+
+Key moments in the waveform (left to right, 0–305 ns):
+- **Reset release (~10 ns):** `acc_q` starts at 0; the CPU begins executing instructions.
+- **First `memwrite` pulse (~20 ns):** `STA 0` executes — `writedata=5` is stored at `mem_addr=0`, initialising the counter.
+- **Countdown loop (~20–250 ns):** `acc_q` decrements each clock cycle (one instruction per cycle, no stalls): **5 → 4 → 3 → 2 → 1 → 0**. Each store is reflected immediately in `writedata`.
+- **Final `memwrite` pulse (~270 ns):** `STA 252` executes — `writedata=0` is written to `mem_addr=252`, the sentinel address that signals the countdown is complete.
+
 ### 3. Simulate Pipelined CPU
 
 The pipelined version handles hazards and includes the same instruction support.
