@@ -1,10 +1,10 @@
 # Hand-Compiled Assembly: `leaf.asm`
 
-This document provides a detailed, step-by-step manual compilation of the `leaf.asm` program into machine code based on the ECE251 custom von Neumann ISA. 
+This document provides a detailed, step-by-step manual compilation of the `leaf.asm` program into machine code based on the our custom ISA. 
 
 ## 1. Instruction Set Architecture (ISA) Recap
 
-Before translating, we must remember the 32-bit instruction format:
+Before translating, recall the 32-bit instruction format:
 ```
  31      26 25  24 23                  0
 ┌──────────┬──────┬─────────────────────┐
