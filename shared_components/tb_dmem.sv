@@ -23,6 +23,12 @@ module tb_dmem;
         forever #5 clk = ~clk; // 10 time-unit period
     end
 
+    // VCD Dumpfile setup for waveform viewing
+    initial begin
+        $dumpfile("tb_dmem.vcd");
+        $dumpvars(0, tb_dmem);
+    end
+
     initial begin
         $display("Time | Clk | WE | Address    | WriteData  | ReadData");
         $display("------------------------------------------------------");

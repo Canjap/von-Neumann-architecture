@@ -29,6 +29,12 @@ module tb_maindec;
         .accsrc(accsrc)
     );
 
+    // VCD Dumpfile setup for waveform viewing
+    initial begin
+        $dumpfile("tb_maindec.vcd");
+        $dumpvars(0, tb_maindec);
+    end
+
     initial begin
         $display("Time | Rst |  Op  | RegW AluS Mem2R MemW Br Jmp MemAddr Call Ret SpW LrW UseSp AccSrc AluOp");
         $display("---------------------------------------------------------------------------------------------");
@@ -38,7 +44,7 @@ module tb_maindec;
         // Test Reset
         reset = 1; op = 6'h00; #10;
         
-        // Test various instructions - can target specific instr or string of instrs by using changing opcodes
+        // Test various instructions
         reset = 0;
         op = 6'h02; #10; // ADD
         op = 6'h08; #10; // LDA
