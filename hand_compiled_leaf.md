@@ -103,7 +103,7 @@ We will assign a byte-address (PC) to each instruction. PC starts at `0` and inc
 
 ## 4. Final Hex File Result
 
-If you were to compile this using the custom `assembler.py` and view the resulting `.hex` file, the memory initialization sequence would look exactly like this:
+Compiling using `assembler.py` would generate a`.hex` file that looks like this:
 
 ```hex
 08000005
