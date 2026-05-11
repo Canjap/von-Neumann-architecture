@@ -18,15 +18,10 @@ module tb_imem;
         .readdata(readdata)
     );
 
-    // Setup dummy hex file for testing
+    // VCD Dumpfile setup for waveform viewing
     initial begin
-        integer file;
-        file = $fopen("test_prog.hex", "w");
-        $fdisplay(file, "08000005"); // Word 0 (Address 0x00)
-        $fdisplay(file, "38000001"); // Word 1 (Address 0x04)
-        $fdisplay(file, "AC000000"); // Word 2 (Address 0x08)
-        $fdisplay(file, "18FFFFFE"); // Word 3 (Address 0x0C)
-        $fclose(file);
+        $dumpfile("tb_imem.vcd");
+        $dumpvars(0, tb_imem);
     end
 
     initial begin
@@ -41,7 +36,6 @@ module tb_imem;
         addr = 8'h00; #10;
         
         // Test 2: Read Word 1 (Byte address 4)
-        // Notice it indexes via addr[7:2], so 4 >> 2 = 1
         addr = 8'h04; #10;
         
         // Test 3: Read Word 2 (Byte address 8)

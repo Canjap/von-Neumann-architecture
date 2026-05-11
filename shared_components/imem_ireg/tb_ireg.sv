@@ -25,6 +25,12 @@ module tb_ireg;
         forever #5 clk = ~clk; // 10 time-unit period
     end
 
+    // VCD Dumpfile setup for waveform viewing
+    initial begin
+        $dumpfile("tb_ireg.vcd");
+        $dumpvars(0, tb_ireg);
+    end
+
     initial begin
         $display("Time | Clk | Rst | En | Clear |  Instr In  |  Instr Out");
         $display("---------------------------------------------------------");
