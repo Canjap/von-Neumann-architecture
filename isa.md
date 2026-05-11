@@ -12,7 +12,7 @@
 
 ### Addressability
 Byte-addressed. The PC increments by 4 each cycle; instruction words are 4-byte aligned.
-Data memory is also byte-addressed — `imm24` encodes a byte address, and the hardware indexes
+Data memory is also byte-addressed — `imm26` encodes a byte address, and the hardware indexes
 word-aligned locations via `a[7:2]`.
 
 ### Register File Size
@@ -36,42 +36,41 @@ its 6-bit opcode; no secondary function field is needed.
 
 ### shamt Size
 **Not applicable.** The ISA has no shift instructions with an in-instruction shift amount.
-The branch-target shift (`imm24 × 4`) is implemented in hardware via bit concatenation
-(`{imm24[29:0], 2'b00}`) — no shamt field is used.
+The branch-target shift (`imm26 × 4`) is implemented in hardware via bit concatenation
+(`{sign_ext(imm26)[29:0], 2'b00}`) — no shamt field is used.
 
 ### Instruction Size
 32 bits, fixed-width.
 
 ```
- 31      26 25  24 23                  0
-┌──────────┬──────┬─────────────────────┐
-│  opcode  │  --  │        imm24        │
-│  [31:26] │ rsvd │       [23:0]        │
-└──────────┴──────┴─────────────────────┘
+ 31      26 25                         0
+┌──────────┬───────────────────────────┐
+│  opcode  │           imm26           │
+│  [31:26] │          [25:0]           │
+└──────────┴───────────────────────────┘
 ```
 
-| Field    | Bits    | Description |
-|----------|---------|-------------|
-| opcode   | [31:26] | 6-bit instruction type |
-| reserved | [25:24] | Must be `2'b00` |
-| imm24    | [23:0]  | 24-bit signed immediate, memory address, or branch offset |
+| Field  | Bits    | Description |
+|--------|---------|-------------|
+| opcode | [31:26] | 6-bit instruction type |
+| imm26  | [25:0]  | 26-bit signed immediate, memory address, or branch offset |
 
 ### PC Increment
 `PC ← PC + 4` for all sequential (non-branch, non-jump) instructions.
 For branches and jumps the target is computed as:
 
 ```
-branch_target = (pcplus4D + 4) + (sign_ext(imm24) << 2)
+branch_target = (pcplus4D + 4) + (sign_ext(imm26) << 2)
 ```
 
 `pcplus4D` is the decode-stage value of PC+4. The extra `+4` compensates for the registered
 PC design. RET uses `PC ← LR` instead of this formula.
 
 ### Immediate Size
-24 bits (`imm24[23:0]`), sign-extended to 32 bits before use:
+26 bits (`imm26[25:0]`), sign-extended to 32 bits before use:
 
 ```
-sign_ext(imm24) = { {8{imm24[23]}}, imm24[23:0] }
+sign_ext(imm26) = { {6{imm26[25]}}, imm26[25:0] }
 ```
 
 ---
@@ -85,15 +84,15 @@ function-code dispatch is needed.
 
 ### I-type Instruction Support
 **Supported.** All arithmetic, memory, and procedure-stack instructions use the I-type
-format (opcode + imm24). ACC is the implicit second operand and the write destination.
+format (opcode[31:26] + imm26[25:0]). ACC is the implicit second operand and the write destination.
 
 ### Memory Reference Support
 **Supported.** Four categories of memory access are provided:
 
 | Category | Instructions | Address source |
 |----------|-------------|----------------|
-| Direct load/store | LDA, STA | `sign_ext(imm24)` |
-| ALU-memory (M-type) | ADDM, SUBM, MULTM, DIVM | `sign_ext(imm24)` |
+| Direct load/store | LDA, STA | `sign_ext(imm26)` |
+| ALU-memory (M-type) | ADDM, SUBM, MULTM, DIVM | `sign_ext(imm26)` |
 | Stack load/store | LDSP, STSP | SP register |
 
 ### J-type Instruction Support
@@ -115,31 +114,31 @@ in the opcode and how the target is computed.
 | Opcode | Mnemonic | Operation |
 |--------|----------|-----------|
 | `0x00` | NOP   | No operation |
-| `0x02` | ADD   | `ACC ← ACC + sign_ext(imm24)` |
-| `0x10` | MULT  | `ACC ← ACC × sign_ext(imm24)` |
-| `0x12` | DIV   | `ACC ← ACC ÷ sign_ext(imm24)` |
+| `0x02` | ADD   | `ACC ← ACC + sign_ext(imm26)` |
+| `0x10` | MULT  | `ACC ← ACC × sign_ext(imm26)` |
+| `0x12` | DIV   | `ACC ← ACC ÷ sign_ext(imm26)` |
 
 #### Arithmetic (memory operand — M-type)
 
 | Opcode | Mnemonic | Operation |
 |--------|----------|-----------|
-| `0x03` | ADDM  | `ACC ← ACC + Mem[sign_ext(imm24)]` |
-| `0x07` | SUBM  | `ACC ← ACC − Mem[sign_ext(imm24)]` |
-| `0x11` | MULTM | `ACC ← ACC × Mem[sign_ext(imm24)]` |
-| `0x13` | DIVM  | `ACC ← ACC ÷ Mem[sign_ext(imm24)]` |
+| `0x03` | ADDM  | `ACC ← ACC + Mem[sign_ext(imm26)]` |
+| `0x07` | SUBM  | `ACC ← ACC − Mem[sign_ext(imm26)]` |
+| `0x11` | MULTM | `ACC ← ACC × Mem[sign_ext(imm26)]` |
+| `0x13` | DIVM  | `ACC ← ACC ÷ Mem[sign_ext(imm26)]` |
 
 #### Memory Load / Store
 
 | Opcode | Mnemonic | Operation |
 |--------|----------|-----------|
-| `0x08` | LDA  | `ACC ← Mem[sign_ext(imm24)]` |
-| `0x2B` | STA  | `Mem[sign_ext(imm24)] ← ACC` |
+| `0x08` | LDA  | `ACC ← Mem[sign_ext(imm26)]` |
+| `0x2B` | STA  | `Mem[sign_ext(imm26)] ← ACC` |
 
 #### Procedure / Stack
 
 | Opcode | Mnemonic | Operation |
 |--------|----------|-----------|
-| `0x14` | ADDSP | `SP ← SP + sign_ext(imm24)` |
+| `0x14` | ADDSP | `SP ← SP + sign_ext(imm26)` |
 | `0x15` | STSP  | `Mem[SP] ← ACC` |
 | `0x16` | LDSP  | `ACC ← Mem[SP]` |
 | `0x17` | GETLR | `ACC ← LR` |
@@ -158,7 +157,7 @@ in the opcode and how the target is computed.
 **Branch target formula** (BZ, BNZ, JMP, CALL):
 
 ```
-branch_target = (pcplus4D + 4) + (sign_ext(imm24) << 2)
+branch_target = (pcplus4D + 4) + (sign_ext(imm26) << 2)
 ```
 
 Assembler encodes the offset as: `imm = target_word − (branch_word + 2)`
@@ -231,9 +230,9 @@ Derived from `shared_components/maindec.sv`. Procedure signals (`callout`, `ret`
 | Signal | Effect when asserted |
 |---|---|
 | `regwrite` | Write ALU or memory result to ACC |
-| `alusrc[1:0]` | ALU input B: `00`=zero, `01`=sign\_ext(imm24), `10`=readdata (M-type / LDSP) |
+| `alusrc[1:0]` | ALU input B: `00`=zero, `01`=sign\_ext(imm26), `10`=readdata (M-type / LDSP) |
 | `memtoreg` | Route data-memory read to ACC (vs. ALU result) |
 | `memwrite` | Write ACC to data memory |
 | `branch` | Enable conditional branch evaluation (BZ/BNZ) |
 | `jump` | Unconditional PC redirect (JMP/CALL) |
-| `memaddrsrc[1:0]` | Memory address select: `00`=ALU result, `01`=sign\_ext(imm24), `10`=SP |
+| `memaddrsrc[1:0]` | Memory address select: `00`=ALU result, `01`=sign\_ext(imm26), `10`=SP |

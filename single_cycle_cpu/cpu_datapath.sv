@@ -28,10 +28,10 @@ module cpu_datapath (
     // =========================================================================
     // Instruction fields
     // =========================================================================
-    logic [23:0] imm24;
+    logic [25:0] imm26;
     logic [31:0] sign_ext_imm;
-    assign imm24        = instr[23:0];
-    assign sign_ext_imm = {{8{imm24[23]}}, imm24};
+    assign imm26        = instr[25:0];
+    assign sign_ext_imm = {{6{imm26[25]}}, imm26};
 
     // =========================================================================
     // Internal signals

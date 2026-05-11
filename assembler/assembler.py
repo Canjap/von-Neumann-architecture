@@ -82,7 +82,7 @@ def assemble(asm_file, exe_file):
         else:
             imm = int(parts[1], 0)
 
-        machine_code.append(f"{(opcodes[op] << 26) | (imm & 0xFFFFFF):08x}")
+        machine_code.append(f"{(opcodes[op] << 26) | (imm & 0x3FFFFFF):08x}")
 
     with open(exe_file, 'w') as f:
         for c in machine_code:

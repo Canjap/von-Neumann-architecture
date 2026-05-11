@@ -6,19 +6,18 @@ This document provides a detailed, step-by-step manual compilation of the `leaf.
 
 Before translating, recall the 32-bit instruction format:
 ```
- 31      26 25  24 23                  0
-┌──────────┬──────┬─────────────────────┐
-│  opcode  │ 0 0  │        imm24        │
-└──────────┴──────┴─────────────────────┘
+ 31      26 25                         0
+┌──────────┬───────────────────────────┐
+│  opcode  │           imm26           │
+└──────────┴───────────────────────────┘
 ```
 * **Opcode (6 bits):** Determines the instruction.
-* **Reserved (2 bits):** Always `00`.
-* **Immediate (24 bits):** Signed 24-bit integer.
+* **Immediate (26 bits):** Signed 26-bit integer.
 
 ### Branching / Jump Formula
 According to the ISA specification, jump and branch targets (`CALL`, `JMP`, `BZ`, `BNZ`) are calculated relative to the Program Counter (PC). Because of the pipeline, the PC is effectively `PC + 8` during the execution stage.
-* **Formula:** `Target_Address = (PC + 8) + (imm24 * 4)`
-* **To solve for imm24:** `imm24 = (Target_Address - PC - 8) / 4`
+* **Formula:** `Target_Address = (PC + 8) + (imm26 * 4)`
+* **To solve for imm26:** `imm26 = (Target_Address - PC - 8) / 4`
 
 ---
 
@@ -45,8 +44,8 @@ We will assign a byte-address (PC) to each instruction. PC starts at `0` and inc
 ### Instruction 1: `ADD 5` (Address `0x00`)
 * **Operation:** Accumulator = Accumulator + 5
 * **Opcode for ADD:** `0x02` (`000010` in binary)
-* **Immediate:** `5` (`0x000005` in 24-bit hex)
-* **Binary Assembly:** `[000010] [00] [0000 0000 0000 0000 0000 0101]`
+* **Immediate:** `5` (`0x0000005` in 26-bit hex)
+* **Binary Assembly:** `[000010] [00 0000 0000 0000 0000 0000 0101]`
 * **Hex Conversion:**
   `0000 1000 0000 0000 0000 0000 0000 0101`
 * **Final Machine Code:** **`0x08000005`**
@@ -54,9 +53,9 @@ We will assign a byte-address (PC) to each instruction. PC starts at `0` and inc
 ### Instruction 2: `CALL add_ten` (Address `0x04`)
 * **Operation:** Save Return Address, Jump to `add_ten` (Target = `0x10`)
 * **Opcode for CALL:** `0x0E` (`001110` in binary)
-* **Immediate Calculation:** `imm24 = (0x10 - 0x04 - 0x08) / 4`
-  `imm24 = (16 - 4 - 8) / 4 = 4 / 4 = 1`
-* **Binary Assembly:** `[001110] [00] [0000 0000 0000 0000 0000 0001]`
+* **Immediate Calculation:** `imm26 = (0x10 - 0x04 - 0x08) / 4`
+  `imm26 = (16 - 4 - 8) / 4 = 4 / 4 = 1`
+* **Binary Assembly:** `[001110] [00 0000 0000 0000 0000 0000 0001]`
 * **Hex Conversion:**
   `0011 1000 0000 0000 0000 0000 0000 0001`
 * **Final Machine Code:** **`0x38000001`**
@@ -65,7 +64,7 @@ We will assign a byte-address (PC) to each instruction. PC starts at `0` and inc
 * **Operation:** Store Accumulator into Memory at address 0
 * **Opcode for STA:** `0x2B` (`101011` in binary)
 * **Immediate:** `0`
-* **Binary Assembly:** `[101011] [00] [0000 0000 0000 0000 0000 0000]`
+* **Binary Assembly:** `[101011] [00 0000 0000 0000 0000 0000 0000]`
 * **Hex Conversion:**
   `1010 1100 0000 0000 0000 0000 0000 0000`
 * **Final Machine Code:** **`0xAC000000`**
@@ -73,19 +72,19 @@ We will assign a byte-address (PC) to each instruction. PC starts at `0` and inc
 ### Instruction 4: `JMP done` (Address `0x0C`)
 * **Operation:** Infinite loop jumping to itself (Target = `0x0C`)
 * **Opcode for JMP:** `0x06` (`000110` in binary)
-* **Immediate Calculation:** `imm24 = (0x0C - 0x0C - 0x08) / 4`
-  `imm24 = (12 - 12 - 8) / 4 = -8 / 4 = -2`
-* **Two's Complement of -2 (24-bit):** `0xFFFFFE`
-* **Binary Assembly:** `[000110] [00] [1111 1111 1111 1111 1111 1110]`
+* **Immediate Calculation:** `imm26 = (0x0C - 0x0C - 0x08) / 4`
+  `imm26 = (12 - 12 - 8) / 4 = -8 / 4 = -2`
+* **Two's Complement of -2 (26-bit):** `0x3FFFFFE`
+* **Binary Assembly:** `[000110] [11 1111 1111 1111 1111 1111 1110]`
 * **Hex Conversion:**
-  `0001 1000 1111 1111 1111 1111 1111 1110`
-* **Final Machine Code:** **`0x18FFFFFE`**
+  `0001 1011 1111 1111 1111 1111 1111 1110`
+* **Final Machine Code:** **`0x1BFFFFFE`**
 
 ### Instruction 5: `ADD 10` (Address `0x10`)
 * **Operation:** Accumulator = Accumulator + 10
 * **Opcode for ADD:** `0x02` (`000010` in binary)
-* **Immediate:** `10` (`0x00000A` in 24-bit hex)
-* **Binary Assembly:** `[000010] [00] [0000 0000 0000 0000 0000 1010]`
+* **Immediate:** `10` (`0x000000A` in 26-bit hex)
+* **Binary Assembly:** `[000010] [00 0000 0000 0000 0000 0000 1010]`
 * **Hex Conversion:**
   `0000 1000 0000 0000 0000 0000 0000 1010`
 * **Final Machine Code:** **`0x0800000A`**
@@ -94,7 +93,7 @@ We will assign a byte-address (PC) to each instruction. PC starts at `0` and inc
 * **Operation:** Return to the address stored in the Link Register (LR)
 * **Opcode for RET:** `0x0F` (`001111` in binary)
 * **Immediate:** Ignored by hardware, assembler sets to `0`.
-* **Binary Assembly:** `[001111] [00] [0000 0000 0000 0000 0000 0000]`
+* **Binary Assembly:** `[001111] [00 0000 0000 0000 0000 0000 0000]`
 * **Hex Conversion:**
   `0011 1100 0000 0000 0000 0000 0000 0000`
 * **Final Machine Code:** **`0x3C000000`**
@@ -109,7 +108,7 @@ Compiling using `assembler.py` would generate a`.hex` file that looks like this:
 08000005
 38000001
 AC000000
-18FFFFFE
+1BFFFFFE
 0800000A
 3C000000
 ```

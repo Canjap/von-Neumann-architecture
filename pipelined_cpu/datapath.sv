@@ -3,9 +3,9 @@
 //   - No register file; a single ACC register replaces it
 //   - Only one forwarding mux needed (ACC source for EX stage)
 //   - Branch condition is ACC==0 (BZ) or ACC!=0 (BNZ), evaluated in ID
-//   - Instruction format: opcode[31:26], imm24[23:0] — no rs/rt/rd fields
+//   - Instruction format: opcode[31:26], imm26[25:0] — no rs/rt/rd fields
 //   - Assembler encodes branch offset as: imm = target_word - (branch_word + 2)
-//     so hardware branch target = pcplus4D + 4 + (sign_ext(imm24) << 2)
+//     so hardware branch target = pcplus4D + 4 + (sign_ext(imm26) << 2)
 //
 // P1-P3 extensions:
 //   - LR (Link Register): written by CALL in ID, by SETLR in WB
@@ -143,7 +143,7 @@ module datapath (
     logic [31:0] accD_bypassed;
     assign accD_bypassed = regwriteW ? resultW : accD;
 
-    signext #(32, 24) se (.in(instrD[23:0]), .out(signimmD));
+    signext #(32, 26) se (.in(instrD[25:0]), .out(signimmD));
     eqcmp   #(32)     eq (.acc(accD_bypassed), .zero(zeroD));
 
     // LR and SP are readable combinatorially in ID (like accD)

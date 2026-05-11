@@ -30,14 +30,14 @@ loop:           ; label (must start with a letter or underscore)
 Every instruction encodes to a single 32-bit word:
 
 ```
- 31      26 25  24 23                  0
-┌──────────┬──────┬─────────────────────┐
-│  opcode  │  00  │        imm24        │
-│  [31:26] │ rsvd │       [23:0]        │
-└──────────┴──────┴─────────────────────┘
+ 31      26 25                         0
+┌──────────┬───────────────────────────┐
+│  opcode  │           imm26           │
+│  [31:26] │          [25:0]           │
+└──────────┴───────────────────────────┘
 ```
 
-`imm24` is a **signed 24-bit** value (two's complement). Range: −8 388 608 to +8 388 607.
+`imm26` is a **signed 26-bit** value (two's complement). Range: −33 554 432 to +33 554 431.
 
 ---
 
@@ -144,26 +144,26 @@ Using consecutive integers (0, 1, 2, …) as addresses is a common mistake — t
 BZ, BNZ, and JMP all use the same target formula in hardware:
 
 ```
-branch_target = PC_current + 8 + (imm24 × 4)
+branch_target = PC_current + 8 + (imm26 × 4)
 ```
 
 ### Using a label (recommended)
 
-The assembler computes `imm24` automatically:
+The assembler computes `imm26` automatically:
 
 ```
-imm24 = (label_byte_address − current_byte_address) / 4 − 2
+imm26 = (label_byte_address − current_byte_address) / 4 − 2
 ```
 
 ```asm
 loop:
     ADD  -1
-    BNZ  loop   ; assembler fills in imm24 = -2 (branches back to ADD)
+    BNZ  loop   ; assembler fills in imm26 = -2 (branches back to ADD)
 ```
 
 ### Using a literal offset
 
-`imm24` is a **word offset from PC+2**. Use this only if you need a fixed numeric offset.
+`imm26` is a **word offset from PC+2**. Use this only if you need a fixed numeric offset.
 A literal of `-6` means: jump to `PC_current + 8 + (−6 × 4) = PC_current − 16`.
 
 ---

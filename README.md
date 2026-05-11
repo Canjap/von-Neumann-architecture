@@ -32,15 +32,14 @@ The Instruction Set Architecture (ISA) is a fixed-width 32-bit format.
 ### Instruction Format
 
 ```
- 31      26 25  24 23                  0
-┌──────────┬──────┬─────────────────────┐
-│  opcode  │ rsvd │        imm24        │
-└──────────┴──────┴─────────────────────┘
-
+ 31      26 25                         0
+┌──────────┬───────────────────────────┐
+│  opcode  │           imm26           │
+└──────────┴───────────────────────────┘
 ```
 
 * **Opcode:** 6 bits.
-* **imm24:** 24-bit signed immediate used for arithmetic, memory addresses, or branch offsets.
+* **imm26:** 26-bit signed immediate used for arithmetic, memory addresses, or branch offsets.
 
 ### Instruction Subset
 
