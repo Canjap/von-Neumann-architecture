@@ -88,6 +88,14 @@ make
 
 ```
 
+![Pipelined CPU running countdown in GTKWave](pipelined_cpu_running_countdown.png)
+
+Key moments in the waveform (left to right, 0–395 ns):
+- **Reset release (~25 ns):** `accD` starts at 0; the pipeline begins fetching instructions.
+- **First `memwriteM` pulse (~50 ns):** `STA 0` executes — `writedataM=5` is stored at `mem_addrM=0`, initialising the counter.
+- **Countdown loop (~50–330 ns):** `accD` decrements each iteration: **5 → 4 → 3 → 2 → 1 → 0**. Each value is visible as a stable level between clock edges.
+- **Final `memwriteM` pulse (~350 ns):** `STA 252` executes — `writedataM=0` is written to `mem_addrM=252`, the sentinel address that signals the countdown is complete.
+
 ---
 
 ## Memory Layout and Addressing
