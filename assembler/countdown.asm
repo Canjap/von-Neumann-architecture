@@ -17,7 +17,7 @@ loop:
     NOP
     BNZ  loop       ; branch back if ACC != 0
 
-; --- Done: ACC == 0 ---
-    NOP
-    NOP
-    NOP
+; --- Done: ACC == 0, write sentinel and halt ---
+    STA  252        ; Mem[252] = 0  (sentinel)
+done:
+    JMP  done       ; halt
