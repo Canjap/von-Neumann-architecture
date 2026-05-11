@@ -5,10 +5,10 @@
 `include "cpu_top.sv"
 `include "cpu_controller.sv"
 `include "cpu_datapath.sv"
-`include "acc.sv"
-`include "alu.sv"
-`include "mux2.sv"
-`include "PC.sv"
+`include "../shared_components/acc.sv"
+`include "../shared_components/alu/alu.sv"
+`include "../shared_components/combinatorial components/multiplexors/mux2.sv"
+`include "../shared_components/PC/PC.sv"
 
 module sc_cpu_top (
     input  logic        clk,
