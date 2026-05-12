@@ -118,3 +118,7 @@ The Pipelined CPU includes hardware-level stall logic. However, the assembly lan
 
 * **SP Updates:** Up to 3 stall cycles may be inserted between `ADDSP` and subsequent stack operations.
 * **Link Register:** 2 stall cycles between `SETLR` and `RET`/`GETLR`.
+
+## Component Sequence Diagram
+
+![Component Sequence Diagram](Component_Sequence_Diagram.png)
