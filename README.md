@@ -68,13 +68,13 @@ python3 assembler.py <input_file.asm> <output_file.hex>
 
 ### 2. Simulate Single-Cycle CPU
 
-To run the single-cycle implementation:
+To run the single-cycle implementation (note that the file extension should not be provided):
 
 ```bash
 cd single_cycle_cpu
-make
+make PROG=<output_file>
 # This will compile the SystemVerilog files and run the testbench (tb_sc_cpu.sv)
-
+make waves # view gtkwave output
 ```
 
 ![Single-Cycle CPU running countdown in GTKWave](single_cycle_running_countdown.png)
@@ -87,13 +87,13 @@ Key moments in the waveform (left to right, 0–305 ns):
 
 ### 3. Simulate Pipelined CPU
 
-The pipelined version handles hazards and includes the same instruction support.
+The pipelined version handles hazards and includes the same instruction support (note that the file extension should not be provided).
 
 ```bash
 cd pipelined_cpu
-make
+make PROG=<output_file>
 # This will compile the SystemVerilog files and run the testbench (tb_pipelined_cpu.sv)
-
+make waves # view gtkwave output
 ```
 
 ![Pipelined CPU running countdown in GTKWave](pipelined_cpu_running_countdown.png)
