@@ -1,16 +1,21 @@
-PROG  ?= factorial
-TEST  ?= $(PROG)
-HEX   ?= ../assembler/$(PROG).hex
+PROJECT  = sc_cpu
+TOP      = tb_sc_cpu
+SRC      = $(TOP).sv
+PROG     ?= countdown
+TEST     ?= $(PROG)
 
-.PHONY: all run clean
+INCLUDES = -I. -I../shared_components -I../shared_components/imem_ireg -I../shared_components/alu -I../shared_components/combinatorial\ components
 
-all: tb_sc_cpu.vvp
+all: compile run
 
-tb_sc_cpu.vvp: tb_sc_cpu.sv
-	iverilog -g2012 -o $@ $<
+compile:
+	iverilog -g2012 $(INCLUDES) -o $(PROJECT).vvp $(SRC)
 
-run: tb_sc_cpu.vvp
-	vvp $< +PROG=$(HEX) +TEST=$(TEST)
+run:
+	vvp $(PROJECT).vvp +PROG=../assembler/$(PROG).hex +TEST=$(TEST) > debug_output.txt
+
+waves:
+	gtkwave $(TOP).vcd
 
 clean:
-	rm -f tb_sc_cpu.vvp tb_sc_cpu.vcd
+	rm -f *.vvp *.vcd debug_output.txt
