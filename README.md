@@ -122,3 +122,7 @@ The Pipelined CPU includes hardware-level stall logic. However, the assembly lan
 ## Component Sequence Diagram
 
 ![Component Sequence Diagram](Component_Sequence_Diagram.png)
+
+## Video Demo:
+A video demonstration which shows how to make, compile, and view the output of files made for our architecture can be found here: [Video Demo](https://youtu.be/gfwH_sCVNXE)
+
